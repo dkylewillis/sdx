@@ -80,6 +80,39 @@ for fig in doc.figures_for(result, include_data=True):  # figures on the result'
 | `sdx eval output.sdx queries.json` | Measure retrieval quality against an expected-answer query set |
 | `sdx workbench` | Launch the Streamlit GUI |
 
+Every command accepts `--json` for machine-readable output (see below).
+
+## Using SDX with AI agents
+
+SDX was built to give agents grounded, citation-ready context from large documents without a retrieval service. Agents can call the CLI directly — every command supports `--json` and meaningful exit codes (`validate`/`eval` exit non-zero on failure):
+
+```bash
+sdx search ordinance.sdx "when is detention required" --top-k 5 --json --figures
+```
+
+```json
+{
+  "query": "when is detention required",
+  "mode": "hybrid",
+  "results": [
+    {
+      "chunk_id": "chunk_000412",
+      "score": 0.93,
+      "text": "Stream channel protection shall be provided by...",
+      "page_start": 120,
+      "page_end": 120,
+      "heading_path": "4. Implementing Stormwater Management > ...",
+      "source_filename": "ordinance.pdf",
+      "figures": [
+        {"page_number": 120, "caption": "Figure 4-1: Detention sizing", "asset_id": "asset_block_000371", "...": "..."}
+      ]
+    }
+  ]
+}
+```
+
+Every result carries its citation (source file, page, heading path), so agent answers can point back to the exact location in the source document. `--figures` adds metadata and captions for images on the result's pages — agents can mention or fetch the relevant diagram.
+
 ## Testing & retrieval evaluation
 
 Run the automated suite (97 tests, also run in CI on Ubuntu/Windows × Python 3.10/3.12):
