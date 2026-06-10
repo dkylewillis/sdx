@@ -208,6 +208,21 @@ How a reader ranks results is implementation-defined. The reference implementati
 
 Search results SHOULD be citation-ready: chunk text, score, `page_start`/`page_end`, `heading_path`, and `source_filename`. Readers MAY also return adjacent chunk context, such as chunks before and after a ranked hit, using `chunks.sort_order` within the same `document_id`.
 
+### 7.1 Visual grounding (informative)
+
+Because `chunk_blocks` links every chunk to its contributing blocks, and blocks carry `bbox_json` plus a `page_id` into `pages` (which stores `width`/`height`), readers can resolve a chunk to its **highlight regions** — the page numbers and bounding boxes of the text it came from:
+
+```sql
+SELECT b.page_number, b.bbox_json, p.width, p.height
+FROM chunk_blocks cb
+JOIN blocks b ON b.block_id = cb.block_id
+LEFT JOIN pages p ON p.page_id = b.page_id
+WHERE cb.chunk_id = ?
+ORDER BY b.sort_order;
+```
+
+Coordinates are in page points with the origin at the **top-left** (Section 3); viewers rendering with a bottom-left origin (e.g. PDF.js) must flip the y-axis using the page height. Regions are block-granular: a chunk that starts or ends mid-block maps to the whole block's bbox, so a highlight MAY cover slightly more text than the chunk itself.
+
 ## 8. Conformance levels
 
 | Level | Requirements | Needs |

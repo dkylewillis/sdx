@@ -37,6 +37,8 @@ vera convert input.pdf output.vera
 vera inspect output.vera
 vera validate output.vera
 vera search output.vera "stream buffer requirements" --mode hybrid
+vera search ./library "stream buffer requirements"   # search a folder of .vera files
+vera export output.vera original.pdf                 # get the source document back out
 ```
 
 Python:
@@ -51,6 +53,24 @@ results = doc.search("when is detention required", mode="hybrid", top_k=5)
 for r in results:
     print(r.score, r.page_start, r.heading_path)
     print(r.text)
+
+# Visual grounding: where on the page did this chunk come from?
+for region in doc.regions_for(results[0]):
+    print(region["page_number"], region["bbox"])  # [x0, y0, x1, y1] in page points
+
+# The original PDF is stored inside the .vera file
+source = doc.get_source_document()                # filename, mime_type, data, hash
+doc.export_source_document("original.pdf")
+```
+
+Search many documents at once:
+
+```python
+from vera import VeraCorpus
+
+with VeraCorpus.open("./library") as corpus:      # a folder of .vera files
+    for r in corpus.search("when is detention required", top_k=5):
+        print(r.file, r.page_start, r.text[:80])  # each result knows its file
 ```
 
 ## Features
@@ -67,6 +87,9 @@ for fig in doc.figures_for(result, include_data=True):  # figures on the result'
 ```
 
 - **Pluggable embeddings** — a deterministic local hashing embedder (384-dim, zero dependencies) is the default; `--model sentence-transformers/all-MiniLM-L6-v2` enables neural embeddings via the optional `ml` extra.
+- **Visual grounding** — every chunk maps back to the page regions it came from. `doc.regions_for(result)` (or `vera search --regions`) returns page numbers and bounding boxes (page points, origin top-left) plus page dimensions, so a viewer can scroll to the page and highlight the cited text.
+- **Document access** — the original source file is stored inside the archive and comes back out intact: `doc.get_source_document()` / `vera export`. Pages (`get_page`), layout blocks with bounding boxes (`get_blocks`), and stored assets (`get_asset`) are all directly accessible for building viewers.
+- **Corpus search** — `VeraCorpus.open(folder)` (or `vera search <folder> "query"`) searches every `.vera` file in a directory as one collection and fuses the rankings; each result is attributed to its file.
 - **Transparent** — every file records its parser, chunking strategy, and embedding model in `vera_metadata`.
 
 ## CLI
@@ -76,7 +99,8 @@ for fig in doc.figures_for(result, include_data=True):  # figures on the result'
 | `vera convert input.pdf output.vera` | Convert a PDF (options: `--model`, `--chunk-size`, `--overlap`) |
 | `vera inspect output.vera` | Print metadata: pages, chunks, model, parser |
 | `vera validate output.vera` | Check schema, counts, and index consistency |
-| `vera search output.vera "query"` | Search (`--mode semantic\|keyword\|hybrid`, `--top-k`, `--context-chunks`) |
+| `vera search output.vera "query"` | Search a file — or a directory of `.vera` files — (`--mode semantic\|keyword\|hybrid`, `--top-k`, `--context-chunks`, `--figures`, `--regions`) |
+| `vera export output.vera [path]` | Write the original source document back out of the archive |
 | `vera eval output.vera queries.json` | Measure retrieval quality against an expected-answer query set |
 | `vera mcp` | Run the MCP server (stdio) exposing VERA tools to AI agents |
 | `vera workbench` | Launch the Streamlit GUI |
@@ -114,11 +138,11 @@ vera search ordinance.vera "when is detention required" --top-k 5 --json --figur
 }
 ```
 
-Every result carries its citation (source file, page, heading path), so agent answers can point back to the exact location in the source document. `--figures` adds metadata and captions for images on the result's pages, and `--context-chunks N` adds N chunks before and after each result as `before_chunks` and `after_chunks`.
+Every result carries its citation (source file, page, heading path), so agent answers can point back to the exact location in the source document. `--figures` adds metadata and captions for images on the result's pages, and `--context-chunks N` adds N chunks before and after each result as `before_chunks` and `after_chunks`. Add `--regions` and each result also carries a `regions` array — the page numbers and bounding boxes (`[x0, y0, x1, y1]` in page points, origin top-left, with page dimensions) of the blocks the chunk came from — so a viewer can scroll to the citation and highlight it. Point `vera search` at a directory instead of a file and the agent searches every `.vera` file in it as one corpus, with each result attributed to its `file`.
 
 ### MCP server
 
-VERA also ships a [Model Context Protocol](https://modelcontextprotocol.io/) server so MCP-capable agents can use VERA as native tools — `vera_search`, `vera_inspect`, `vera_validate`, `vera_figures`, and `vera_get_page`. Install the `mcp` extra and point your client at `vera mcp`:
+VERA also ships a [Model Context Protocol](https://modelcontextprotocol.io/) server so MCP-capable agents can use VERA as native tools — `vera_search`, `vera_corpus_search`, `vera_inspect`, `vera_validate`, `vera_figures`, `vera_get_page`, and `vera_get_chunk_regions`. Install the `mcp` extra and point your client at `vera mcp`:
 
 ```bash
 pip install vera[mcp]
@@ -141,7 +165,7 @@ See [AGENTS.md](AGENTS.md) and [skills/vera/SKILL.md](skills/vera/SKILL.md) for 
 
 ## Testing & retrieval evaluation
 
-Run the automated suite (102 tests, also run in CI on Ubuntu/Windows × Python 3.10/3.12):
+Run the automated suite (140 tests, also run in CI on Ubuntu/Windows × Python 3.10/3.12):
 
 ```bash
 uv run --extra dev pytest -q

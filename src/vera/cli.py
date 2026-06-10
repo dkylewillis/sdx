@@ -3,8 +3,10 @@ from __future__ import annotations
 import argparse
 import json
 import sys
+from pathlib import Path
 
 from .convert import convert
+from .corpus import VeraCorpus
 from .document import VeraDocument
 
 
@@ -58,20 +60,25 @@ def cmd_inspect(args) -> int:
 
 
 def cmd_search(args) -> int:
-    doc = VeraDocument.open(args.file)
+    target = VeraCorpus.open(args.file) if Path(args.file).is_dir() else VeraDocument.open(args.file)
     try:
-        results = doc.search(args.query, mode=args.mode, top_k=args.top_k, context_chunks=args.context_chunks)
+        results = target.search(args.query, mode=args.mode, top_k=args.top_k, context_chunks=args.context_chunks)
         if args.json:
             payload = []
             for result in results:
                 entry = result.as_dict()
                 if args.figures:
-                    entry["figures"] = doc.figures_for(result)  # metadata + captions, no bytes
+                    entry["figures"] = target.figures_for(result)  # metadata + captions, no bytes
+                if args.regions:
+                    entry["regions"] = target.regions_for(result)  # page + bbox highlight geometry
                 payload.append(entry)
             print(json.dumps({"query": args.query, "mode": args.mode, "results": payload}))
             return 0
         for result in results:
             print(f"Score: {result.score:.4f}")
+            file = getattr(result, "file", None)
+            if file:
+                print(f"File: {file}")
             print(f"Source: {result.source_filename}")
             page = result.page_start if result.page_start == result.page_end else f"{result.page_start}-{result.page_end}"
             print(f"Page: {page}")
@@ -80,7 +87,7 @@ def cmd_search(args) -> int:
             print(result.text)
             print("-" * 72)
     finally:
-        doc.close()
+        target.close()
     return 0
 
 
@@ -90,7 +97,6 @@ def cmd_validate(args) -> int:
         report = doc.validate()
     finally:
         doc.close()
-
     if args.json:
         print(json.dumps({"file": args.file, **report}))
         return 0 if report["ok"] else 1
@@ -107,6 +113,27 @@ def cmd_validate(args) -> int:
     for issue in report["issues"]:
         print(f"- {issue}")
     return 0 if report["ok"] else 1
+
+
+def cmd_export(args) -> int:
+    doc = VeraDocument.open(args.file)
+    try:
+        try:
+            path = doc.export_source_document(args.output)
+        except ValueError as exc:
+            if args.json:
+                print(json.dumps({"ok": False, "error": str(exc)}))
+            else:
+                print(f"Error: {exc}", file=sys.stderr)
+            return 1
+        source = doc.get_source_document()
+    finally:
+        doc.close()
+    if args.json:
+        print(json.dumps({"ok": True, "output": path, "filename": source.filename, "mime_type": source.mime_type, "hash": source.hash}))
+    else:
+        print(f"Exported {path}")
+    return 0
 
 
 def cmd_workbench(args) -> int:
@@ -163,8 +190,8 @@ def build_parser() -> argparse.ArgumentParser:
     inspect_p.add_argument("--json", action="store_true", help="Emit machine-readable JSON")
     inspect_p.set_defaults(func=cmd_inspect)
 
-    search_p = sub.add_parser("search", help="Search a VERA file")
-    search_p.add_argument("file")
+    search_p = sub.add_parser("search", help="Search a VERA file, or a directory of VERA files as one corpus")
+    search_p.add_argument("file", help="Path to a .vera file or a directory containing .vera files")
     search_p.add_argument("query")
     search_p.add_argument("--mode", choices=["semantic", "keyword", "hybrid"], default="hybrid")
     search_p.add_argument("--top-k", type=int, default=10)
@@ -176,12 +203,23 @@ def build_parser() -> argparse.ArgumentParser:
     )
     search_p.add_argument("--json", action="store_true", help="Emit machine-readable JSON")
     search_p.add_argument("--figures", action="store_true", help="Include figure metadata/captions in --json output")
+    search_p.add_argument(
+        "--regions",
+        action="store_true",
+        help="Include page/bbox highlight regions for each result in --json output",
+    )
     search_p.set_defaults(func=cmd_search)
 
     validate_p = sub.add_parser("validate", help="Validate a VERA file")
     validate_p.add_argument("file")
     validate_p.add_argument("--json", action="store_true", help="Emit machine-readable JSON")
     validate_p.set_defaults(func=cmd_validate)
+
+    export_p = sub.add_parser("export", help="Export the original source document from a VERA file")
+    export_p.add_argument("file")
+    export_p.add_argument("output", nargs="?", default=None, help="Output path or directory (default: stored filename)")
+    export_p.add_argument("--json", action="store_true", help="Emit machine-readable JSON")
+    export_p.set_defaults(func=cmd_export)
 
     workbench_p = sub.add_parser("workbench", help="Launch the optional Streamlit VERA Workbench")
     workbench_p.set_defaults(func=cmd_workbench)

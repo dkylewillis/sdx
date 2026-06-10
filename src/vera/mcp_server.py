@@ -19,6 +19,7 @@ from __future__ import annotations
 
 from typing import Any
 
+from .corpus import VeraCorpus
 from .document import VeraDocument
 
 
@@ -53,6 +54,7 @@ def build_server():
         mode: str = "hybrid",
         top_k: int = 5,
         include_figures: bool = False,
+        include_regions: bool = False,
         context_chunks: int = 0,
     ) -> dict[str, Any]:
         """Search a VERA file and return citation-ready chunks.
@@ -64,6 +66,10 @@ def build_server():
             top_k: Number of results to return.
             include_figures: Also return figure metadata and captions located on
                 each result's pages (no image bytes).
+            include_regions: Also return highlight regions for each result —
+                the page numbers and bounding boxes ([x0, y0, x1, y1] in page
+                points, origin top-left) of the blocks the chunk came from,
+                for visual grounding in a PDF viewer.
             context_chunks: Include this many chunks before and after each result.
         """
         doc = _open(file)
@@ -73,10 +79,46 @@ def build_server():
                 entry = result.as_dict()
                 if include_figures:
                     entry["figures"] = doc.figures_for(result)
+                if include_regions:
+                    entry["regions"] = doc.regions_for(result)
                 results.append(entry)
             return {"query": query, "mode": mode, "results": results}
         finally:
             doc.close()
+
+    @server.tool()
+    def vera_corpus_search(
+        directory: str,
+        query: str,
+        mode: str = "hybrid",
+        top_k: int = 5,
+        include_regions: bool = False,
+        context_chunks: int = 0,
+    ) -> dict[str, Any]:
+        """Search every .vera file in a directory as one corpus and return the
+        fused top results. Each result includes the .vera file it came from
+        ("file") plus the usual citation fields (source filename, pages,
+        heading path).
+
+        Args:
+            directory: Folder containing .vera files.
+            query: Natural-language or keyword query.
+            mode: "hybrid" (default, recommended), "semantic", or "keyword".
+            top_k: Number of fused results to return across all files.
+            include_regions: Also return highlight regions (page + bbox) per result.
+            context_chunks: Include this many chunks before and after each result.
+        """
+        corpus = VeraCorpus.open(directory)
+        try:
+            results = []
+            for result in corpus.search(query, mode=mode, top_k=top_k, context_chunks=context_chunks):
+                entry = result.as_dict()
+                if include_regions:
+                    entry["regions"] = corpus.regions_for(result)
+                results.append(entry)
+            return {"directory": directory, "query": query, "mode": mode, "results": results}
+        finally:
+            corpus.close()
 
     @server.tool()
     def vera_inspect(file: str) -> dict[str, Any]:
@@ -119,13 +161,22 @@ def build_server():
         search hit. Pages are 1-based."""
         doc = _open(file)
         try:
-            row = doc.conn.execute(
-                "SELECT page_number, width, height, text FROM pages WHERE page_number = ?",
-                (page_number,),
-            ).fetchone()
-            if row is None:
+            page = doc.get_page(page_number)
+            if page is None:
                 return {"error": f"Page {page_number} not found"}
-            return dict(row)
+            return page
+        finally:
+            doc.close()
+
+    @server.tool()
+    def vera_get_chunk_regions(file: str, chunk_id: str) -> list[dict[str, Any]]:
+        """Get the highlight regions for a chunk: the page numbers and bounding
+        boxes ([x0, y0, x1, y1] in page points, origin top-left) of the blocks
+        the chunk's text came from, plus page dimensions for scaling. Use this
+        to visually ground a citation in the source PDF."""
+        doc = _open(file)
+        try:
+            return doc.get_chunk_regions(chunk_id)
         finally:
             doc.close()
 

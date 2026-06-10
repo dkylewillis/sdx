@@ -17,6 +17,9 @@ All commands support `--json` for machine-readable output on stdout.
 # Search a document (hybrid = semantic + keyword, best default)
 vera search manual.vera "stormwater detention requirements" --top-k 5 --json
 
+# Search a folder of .vera files as one corpus (results include "file")
+vera search ./library "stormwater detention requirements" --top-k 5 --json
+
 # Include figure/table metadata near each result
 vera search manual.vera "pipe sizing chart" --json --figures
 
@@ -26,6 +29,12 @@ vera search manual.vera "stormwater detention requirements" --json --context-chu
 # Keyword-only or semantic-only search
 vera search manual.vera "section 4.2" --mode keyword --json
 vera search manual.vera "how big should the pond be" --mode semantic --json
+
+# Include highlight regions (page + bounding boxes) for visual grounding
+vera search manual.vera "detention requirements" --json --regions
+
+# Export the original source document (e.g. the PDF) back out
+vera export manual.vera exported.pdf --json
 
 # What's in this file?
 vera inspect manual.vera --json
@@ -69,9 +78,12 @@ vera convert manual.pdf manual.vera
    results gain a `figures` array with captions and page locations.
 4. **Use `--context-chunks N`** when an answer needs surrounding prose — results gain
   `before_chunks` and `after_chunks` arrays with citation-ready neighboring chunks.
-5. **Check exit codes.** `validate` returns non-zero for invalid files; `search` on a
+5. **Use `--regions`** when a viewer needs to highlight where a chunk came from —
+   results gain a `regions` array of `{page_number, bbox, page_width, page_height}`
+   (bbox in page points, origin top-left).
+6. **Check exit codes.** `validate` returns non-zero for invalid files; `search` on a
    missing file returns non-zero. Parse stdout as JSON only when exit code is 0.
-6. **Don't read the SQLite file directly** unless the CLI is unavailable — the schema
+7. **Don't read the SQLite file directly** unless the CLI is unavailable — the schema
    is documented in the spec, but the CLI/MCP tools are the stable interface.
 
 ## MCP server
@@ -80,11 +92,13 @@ VERA ships an MCP server (stdio) exposing the same capabilities as tools:
 
 | Tool | Purpose |
 |------|---------|
-| `vera_search` | Hybrid/semantic/keyword search with optional figure metadata |
+| `vera_search` | Hybrid/semantic/keyword search with optional figure metadata and highlight regions |
+| `vera_corpus_search` | Search every .vera file in a directory as one corpus; results attributed per file |
 | `vera_inspect` | Document metadata, page/chunk counts, embedding model |
 | `vera_validate` | Integrity check |
 | `vera_figures` | List figures/images with captions, optionally by page range |
 | `vera_get_page` | Full text of a specific page |
+| `vera_get_chunk_regions` | Page numbers + bounding boxes a chunk's text came from (visual grounding) |
 
 Requires the `mcp` extra: `pip install vera[mcp]`. Example VS Code config
 (`.vscode/mcp.json`):

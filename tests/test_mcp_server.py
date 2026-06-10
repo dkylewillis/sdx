@@ -78,6 +78,31 @@ async def test_get_page_tool(server, vera_file):
     assert "error" in missing
 
 
+@pytest.mark.anyio
+async def test_search_tool_returns_regions(server, vera_file):
+    result = await server.call_tool(
+        "vera_search",
+        {"file": str(vera_file), "query": "restaurant parking", "top_k": 1, "include_regions": True},
+    )
+    first = _payload(result)["results"][0]
+    assert "regions" in first
+    assert first["regions"]
+    region = first["regions"][0]
+    assert {"block_id", "page_number", "bbox", "page_width", "page_height"} <= set(region)
+    assert len(region["bbox"]) == 4
+
+
+@pytest.mark.anyio
+async def test_get_chunk_regions_tool(server, vera_file):
+    search = _payload(
+        await server.call_tool("vera_search", {"file": str(vera_file), "query": "restaurant parking", "top_k": 1})
+    )
+    chunk_id = search["results"][0]["chunk_id"]
+    regions = _payload(await server.call_tool("vera_get_chunk_regions", {"file": str(vera_file), "chunk_id": chunk_id}))
+    assert regions
+    assert regions[0]["page_number"] == search["results"][0]["page_start"]
+
+
 def _payload(call_result):
     """Extract the structured payload from a FastMCP call_tool result."""
     content, structured = call_result
