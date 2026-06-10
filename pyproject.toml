@@ -1,5 +1,5 @@
 [project]
-name = "vera-retrieval"
+name = "vera"
 version = "0.1.0"
 description = "Vector-Embedded Retrieval Archive: portable semantic search layer for documents"
 readme = "README.md"
@@ -19,9 +19,9 @@ classifiers = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/dkylewillis/vera-retrieval"
-Repository = "https://github.com/dkylewillis/vera-retrieval"
-Specification = "https://github.com/dkylewillis/vera-retrieval/blob/main/docs/vera-spec-v0.1.md"
+Homepage = "https://github.com/dkylewillis/vera"
+Repository = "https://github.com/dkylewillis/vera"
+Specification = "https://github.com/dkylewillis/vera/blob/main/docs/vera-spec-v0.1.md"
 
 [project.optional-dependencies]
 ml = ["sentence-transformers>=2.7"]
@@ -30,14 +30,14 @@ mcp = ["mcp>=1.0"]
 dev = ["pytest>=8", "reportlab>=4", "mcp>=1.0"]
 
 [project.scripts]
-vera = "vera_retrieval.cli:main"
+vera = "vera.cli:main"
 
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/vera_retrieval"]
+packages = ["src/vera"]
 
 [tool.pytest.ini_options]
 pythonpath = ["src"]

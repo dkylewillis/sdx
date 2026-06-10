@@ -1,6 +1,6 @@
 import sqlite3
 
-from vera_retrieval import VeraDocument, convert
+from vera import VeraDocument, convert
 
 
 def make_pdf(path):

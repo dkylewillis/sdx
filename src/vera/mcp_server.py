@@ -12,7 +12,7 @@ or configure in an MCP client (e.g. VS Code .vscode/mcp.json):
       }
     }
 
-Requires the optional dependency: pip install vera-retrieval[mcp]
+Requires the optional dependency: pip install vera[mcp]
 """
 
 from __future__ import annotations
@@ -32,7 +32,7 @@ def build_server():
         from mcp.server.fastmcp import FastMCP
     except ImportError as exc:  # pragma: no cover
         raise RuntimeError(
-            "The MCP server requires the optional 'mcp' dependency: pip install vera-retrieval[mcp]"
+            "The MCP server requires the optional 'mcp' dependency: pip install vera[mcp]"
         ) from exc
 
     server = FastMCP(

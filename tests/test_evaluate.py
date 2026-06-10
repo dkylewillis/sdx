@@ -2,8 +2,8 @@ import json
 
 import pytest
 
-from vera_retrieval import convert
-from vera_retrieval.evaluate import QueryCase, evaluate, load_queries
+from vera import convert
+from vera.evaluate import QueryCase, evaluate, load_queries
 from test_convert_search import make_pdf
 
 
@@ -95,7 +95,7 @@ def test_cli_eval(tmp_path, vera_file):
 
     queries = write_queries(tmp_path, [{"query": "restaurant parking", "expected_page": 1}])
     proc = subprocess.run(
-        [sys.executable, "-m", "vera_retrieval.cli", "eval", str(vera_file), str(queries), "--mode", "hybrid", "--top-k", "3"],
+        [sys.executable, "-m", "vera.cli", "eval", str(vera_file), str(queries), "--mode", "hybrid", "--top-k", "3"],
         text=True,
         capture_output=True,
     )
@@ -110,7 +110,7 @@ def test_cli_eval_exit_code_on_miss(tmp_path, vera_file):
 
     queries = write_queries(tmp_path, [{"query": "restaurant parking", "expected_page": 99}])
     proc = subprocess.run(
-        [sys.executable, "-m", "vera_retrieval.cli", "eval", str(vera_file), str(queries), "--mode", "keyword"],
+        [sys.executable, "-m", "vera.cli", "eval", str(vera_file), str(queries), "--mode", "keyword"],
         text=True,
         capture_output=True,
     )

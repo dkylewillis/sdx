@@ -42,7 +42,7 @@ vera search output.vera "stream buffer requirements" --mode hybrid
 Python:
 
 ```python
-from vera_retrieval import convert, VeraDocument
+from vera import convert, VeraDocument
 
 convert("input.pdf", "output.vera")
 
@@ -72,7 +72,7 @@ for fig in doc.figures_for(result, include_data=True):  # figures on the result'
 ## CLI
 
 | Command | Purpose |
-|---------|---------|
+| ------- | ------- |
 | `vera convert input.pdf output.vera` | Convert a PDF (options: `--model`, `--chunk-size`, `--overlap`) |
 | `vera inspect output.vera` | Print metadata: pages, chunks, model, parser |
 | `vera validate output.vera` | Check schema, counts, and index consistency |
@@ -116,10 +116,10 @@ Every result carries its citation (source file, page, heading path), so agent an
 
 ### MCP server
 
-VERA also ships a [Model Context Protocol](https://modelcontextprotocol.io/) server so MCP-capable agents (VS Code, Claude Desktop, etc.) can use VERA as native tools — `vera_search`, `vera_inspect`, `vera_validate`, `vera_figures`, and `vera_get_page`. Install the `mcp` extra and point your client at `vera mcp`:
+VERA also ships a [Model Context Protocol](https://modelcontextprotocol.io/) server so MCP-capable agents can use VERA as native tools — `vera_search`, `vera_inspect`, `vera_validate`, `vera_figures`, and `vera_get_page`. Install the `mcp` extra and point your client at `vera mcp`:
 
 ```bash
-pip install vera-retrieval[mcp]
+pip install vera[mcp]
 ```
 
 Example VS Code configuration (`.vscode/mcp.json`):
@@ -135,7 +135,7 @@ Example VS Code configuration (`.vscode/mcp.json`):
 }
 ```
 
-See [AGENTS.md](AGENTS.md) for agent-facing usage guidance.
+See [AGENTS.md](AGENTS.md) and [skills/vera/SKILL.md](skills/vera/SKILL.md) for agent-facing usage guidance.
 
 ## Testing & retrieval evaluation
 
@@ -148,7 +148,7 @@ uv run --extra dev pytest -q
 Measure retrieval quality against an expected-answer query set:
 
 ```bash
-uv run python -m vera_retrieval.cli eval output.vera queries.json --mode all --top-k 5
+uv run python -m vera.cli eval output.vera queries.json --mode all --top-k 5
 ```
 
 Query files are JSON (or YAML with pyyaml installed) lists of cases:
@@ -172,7 +172,7 @@ Current baseline on the stormwater manual (2,442 chunks, hashing embedder): hybr
 For easy manual testing, install the optional Streamlit extra and launch the workbench:
 
 ```bash
-uv run --extra workbench python -m vera_retrieval.cli workbench
+uv run --extra workbench python -m vera.cli workbench
 ```
 
 The workbench lets you upload a PDF, convert it to `.vera`, inspect metadata, run validation, browse chunks, compare semantic/keyword/hybrid search results, and view figures (with captions) co-located with each result.

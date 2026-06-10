@@ -4,7 +4,7 @@ import json
 
 import pytest
 
-from vera_retrieval import convert
+from vera import convert
 from test_convert_search import make_pdf
 
 
@@ -20,7 +20,7 @@ def vera_file(tmp_path_factory):
 
 @pytest.fixture(scope="module")
 def server():
-    from vera_retrieval.mcp_server import build_server
+    from vera.mcp_server import build_server
 
     return build_server()
 

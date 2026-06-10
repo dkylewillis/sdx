@@ -2,17 +2,17 @@
 
 import pytest
 
-from vera_retrieval.convert import chunk_pages, _detect_heading
-from vera_retrieval.embeddings import (
+from vera.convert import chunk_pages, _detect_heading
+from vera.embeddings import (
     HashingEmbedder,
     cosine_similarity,
     deserialize_vector,
     get_embedder,
     serialize_vector,
 )
-from vera_retrieval.document import VeraDocument, SearchResult
-from vera_retrieval.cli import _str_to_bool
-from vera_retrieval.parsers.pdf import ParsedPage
+from vera.document import VeraDocument, SearchResult
+from vera.cli import _str_to_bool
+from vera.parsers.pdf import ParsedPage
 
 
 # ---------------------------------------------------------------------------
@@ -247,7 +247,7 @@ class TestSearchResult:
 class TestVeraDocumentSearchValidation:
     def test_invalid_mode_raises_value_error(self, tmp_path):
         from test_convert_search import make_pdf
-        from vera_retrieval import convert
+        from vera import convert
 
         pdf = tmp_path / "test.pdf"
         vera = tmp_path / "test.vera"
@@ -268,14 +268,14 @@ class TestVeraDocumentSearchValidation:
 
 class TestConvertErrors:
     def test_missing_input_raises_file_not_found(self, tmp_path):
-        from vera_retrieval.convert import convert as vera_convert
+        from vera.convert import convert as vera_convert
 
         with pytest.raises(FileNotFoundError):
             vera_convert(str(tmp_path / "missing.pdf"), str(tmp_path / "out.vera"))
 
     def test_unsupported_parser_raises_value_error(self, tmp_path):
         from test_convert_search import make_pdf
-        from vera_retrieval.convert import convert as vera_convert
+        from vera.convert import convert as vera_convert
 
         pdf = tmp_path / "test.pdf"
         make_pdf(pdf)

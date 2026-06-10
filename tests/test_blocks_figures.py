@@ -4,9 +4,9 @@ import sqlite3
 
 import pytest
 
-from vera_retrieval import VeraDocument, convert
-from vera_retrieval.convert import build_chunks_from_blocks
-from vera_retrieval.parsers import ParsedBlock, parse_pdf_structured
+from vera import VeraDocument, convert
+from vera.convert import build_chunks_from_blocks
+from vera.parsers import ParsedBlock, parse_pdf_structured
 
 
 def make_structured_pdf(path, with_image: bool = True):

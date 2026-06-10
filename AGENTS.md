@@ -81,7 +81,7 @@ VERA ships an MCP server (stdio) exposing the same capabilities as tools:
 | `vera_figures` | List figures/images with captions, optionally by page range |
 | `vera_get_page` | Full text of a specific page |
 
-Requires the `mcp` extra: `pip install vera-retrieval[mcp]`. Example VS Code config
+Requires the `mcp` extra: `pip install vera[mcp]`. Example VS Code config
 (`.vscode/mcp.json`):
 
 ```json
@@ -100,7 +100,7 @@ Requires the `mcp` extra: `pip install vera-retrieval[mcp]`. Example VS Code con
 - Python 3.10+, dependencies managed with [uv](https://docs.astral.sh/uv/):
   `uv sync --extra dev --extra ml --extra workbench --extra mcp`
 - Run tests with `pytest` (all tests must pass before committing).
-- Core code lives in [src/vera_retrieval](src/vera_retrieval); the format spec is
+- Core code lives in [src/vera](src/vera); the format spec is
   [docs/vera-spec-v0.1.md](docs/vera-spec-v0.1.md) — keep code and spec in sync.
 - Retrieval quality is tracked with `vera eval` against the query sets in
   [examples](examples); don't regress the baselines in the README.

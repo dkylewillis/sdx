@@ -6,7 +6,7 @@
 
 VERA (Vector-Embedded Retrieval Archive) is a portable, single-file format for semantically searchable documents. An `.vera` file carries a source document together with its parsed structure, text chunks, vector embeddings, keyword index, extracted figures, and citation metadata, so that any compatible application can search the document without re-parsing, re-chunking, or re-embedding it.
 
-This document specifies what a conforming **writer** must produce and what a conforming **reader** can rely on. The reference implementation is the [`vera-retrieval` Python package](https://github.com/dkylewillis/vera-retrieval).
+This document specifies what a conforming **writer** must produce and what a conforming **reader** can rely on. The reference implementation is the [`vera` Python package](https://github.com/dkylewillis/vera).
 
 The key words MUST, SHOULD, and MAY are to be interpreted as described in RFC 2119.
 

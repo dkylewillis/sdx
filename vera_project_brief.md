@@ -121,8 +121,8 @@ vera search output.vera "minimum parking required for restaurant"
 Python API:
 
 ```python
-from vera_retrieval import convert
-from vera_retrieval import VeraDocument
+from vera import convert
+from vera import VeraDocument
 
 convert("ordinance.pdf", "ordinance.vera")
 
@@ -581,8 +581,8 @@ Could export chunks and metadata.
 Minimum API:
 
 ```python
-from vera_retrieval import convert
-from vera_retrieval import VeraDocument
+from vera import convert
+from vera import VeraDocument
 
 convert("input.pdf", "output.vera")
 

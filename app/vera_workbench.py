@@ -5,7 +5,7 @@ from pathlib import Path
 
 import streamlit as st
 
-from vera_retrieval import VeraDocument, convert
+from vera import VeraDocument, convert
 
 
 st.set_page_config(page_title="VERA Workbench", layout="wide")

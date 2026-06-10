@@ -216,7 +216,7 @@ def convert(
             "format_version": FORMAT_VERSION,
             "created_at": now,
             "created_by": "vera",
-            "creator_library": "vera-retrieval-python/0.1.0",
+            "creator_library": "vera-python/0.1.0",
             "source_file_name": source.name,
             "source_file_hash": source_hash,
             "source_mime_type": mime_type,
