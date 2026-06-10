@@ -1,6 +1,6 @@
 import sqlite3
 
-from sdx import SDXDocument, convert
+from vera_retrieval import VeraDocument, convert
 
 
 def make_pdf(path):
@@ -15,9 +15,9 @@ def make_pdf(path):
     doc.close()
 
 
-def test_convert_pdf_populates_sdx_and_searches(tmp_path):
+def test_convert_pdf_populates_vera_and_searches(tmp_path):
     pdf = tmp_path / "ordinance.pdf"
-    out = tmp_path / "ordinance.sdx"
+    out = tmp_path / "ordinance.vera"
     make_pdf(pdf)
 
     convert(str(pdf), str(out), model="hashing", chunk_size=40, overlap=5)
@@ -30,7 +30,7 @@ def test_convert_pdf_populates_sdx_and_searches(tmp_path):
     assert conn.execute("SELECT COUNT(*) FROM chunks_fts").fetchone()[0] >= 2
     assert conn.execute("SELECT COUNT(*) FROM assets WHERE asset_type='original_document'").fetchone()[0] == 1
 
-    doc = SDXDocument.open(str(out))
+    doc = VeraDocument.open(str(out))
     info = doc.inspect()
     assert info["format_version"] == "0.1"
     assert info["pages"] == 2
@@ -54,11 +54,11 @@ def test_hybrid_keeps_chunk_that_tops_both_modes(tmp_path):
     rank #1 in hybrid. The old fusion buried dual-mode winners behind chunks
     that merely appeared in both candidate pools."""
     pdf = tmp_path / "ordinance.pdf"
-    out = tmp_path / "ordinance.sdx"
+    out = tmp_path / "ordinance.vera"
     make_pdf(pdf)
     convert(str(pdf), str(out), model="hashing", chunk_size=40, overlap=5)
 
-    doc = SDXDocument.open(str(out))
+    doc = VeraDocument.open(str(out))
     query = "restaurant parking space requirements"
     top_sem = doc.search(query, mode="semantic", top_k=1)[0]
     top_key = doc.search(query, mode="keyword", top_k=1)[0]

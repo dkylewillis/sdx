@@ -2,15 +2,15 @@ import json
 
 import pytest
 
-from sdx import convert
-from sdx.evaluate import QueryCase, evaluate, load_queries
+from vera_retrieval import convert
+from vera_retrieval.evaluate import QueryCase, evaluate, load_queries
 from test_convert_search import make_pdf
 
 
 @pytest.fixture
-def sdx_file(tmp_path):
+def vera_file(tmp_path):
     pdf = tmp_path / "doc.pdf"
-    out = tmp_path / "doc.sdx"
+    out = tmp_path / "doc.vera"
     make_pdf(pdf)
     convert(str(pdf), str(out), model="hashing", chunk_size=40, overlap=5)
     return out
@@ -50,7 +50,7 @@ def test_query_case_requires_query_text():
         QueryCase(query="", expected_pages=[1])
 
 
-def test_evaluate_hits_and_mrr(tmp_path, sdx_file):
+def test_evaluate_hits_and_mrr(tmp_path, vera_file):
     queries = write_queries(
         tmp_path,
         [
@@ -58,7 +58,7 @@ def test_evaluate_hits_and_mrr(tmp_path, sdx_file):
             {"query": "detention impervious area", "expected_page": 2, "expected_terms": ["detention"]},
         ],
     )
-    summary = evaluate(str(sdx_file), str(queries), mode="hybrid", top_k=3)
+    summary = evaluate(str(vera_file), str(queries), mode="hybrid", top_k=3)
     report = summary["reports"][0]
     assert report["mode"] == "hybrid"
     assert report["hits"] == 2
@@ -67,35 +67,35 @@ def test_evaluate_hits_and_mrr(tmp_path, sdx_file):
     assert all(q["hit"] for q in report["queries"])
 
 
-def test_evaluate_all_modes(tmp_path, sdx_file):
+def test_evaluate_all_modes(tmp_path, vera_file):
     queries = write_queries(tmp_path, [{"query": "stormwater detention", "expected_page": 2}])
-    summary = evaluate(str(sdx_file), str(queries), mode="all", top_k=5)
+    summary = evaluate(str(vera_file), str(queries), mode="all", top_k=5)
     modes = [r["mode"] for r in summary["reports"]]
     assert modes == ["semantic", "keyword", "hybrid"]
 
 
-def test_evaluate_records_miss(tmp_path, sdx_file):
+def test_evaluate_records_miss(tmp_path, vera_file):
     queries = write_queries(tmp_path, [{"query": "restaurant parking", "expected_page": 99}])
-    summary = evaluate(str(sdx_file), str(queries), mode="keyword", top_k=3)
+    summary = evaluate(str(vera_file), str(queries), mode="keyword", top_k=3)
     report = summary["reports"][0]
     assert report["hits"] == 0
     assert report["mrr"] == 0.0
     assert report["queries"][0]["rank"] is None
 
 
-def test_evaluate_invalid_mode(tmp_path, sdx_file):
+def test_evaluate_invalid_mode(tmp_path, vera_file):
     queries = write_queries(tmp_path, [{"query": "parking", "expected_page": 1}])
     with pytest.raises(ValueError, match="mode must be"):
-        evaluate(str(sdx_file), str(queries), mode="fuzzy")
+        evaluate(str(vera_file), str(queries), mode="fuzzy")
 
 
-def test_cli_eval(tmp_path, sdx_file):
+def test_cli_eval(tmp_path, vera_file):
     import subprocess
     import sys
 
     queries = write_queries(tmp_path, [{"query": "restaurant parking", "expected_page": 1}])
     proc = subprocess.run(
-        [sys.executable, "-m", "sdx.cli", "eval", str(sdx_file), str(queries), "--mode", "hybrid", "--top-k", "3"],
+        [sys.executable, "-m", "vera_retrieval.cli", "eval", str(vera_file), str(queries), "--mode", "hybrid", "--top-k", "3"],
         text=True,
         capture_output=True,
     )
@@ -104,13 +104,13 @@ def test_cli_eval(tmp_path, sdx_file):
     assert "Hits: 1/1" in proc.stdout
 
 
-def test_cli_eval_exit_code_on_miss(tmp_path, sdx_file):
+def test_cli_eval_exit_code_on_miss(tmp_path, vera_file):
     import subprocess
     import sys
 
     queries = write_queries(tmp_path, [{"query": "restaurant parking", "expected_page": 99}])
     proc = subprocess.run(
-        [sys.executable, "-m", "sdx.cli", "eval", str(sdx_file), str(queries), "--mode", "keyword"],
+        [sys.executable, "-m", "vera_retrieval.cli", "eval", str(vera_file), str(queries), "--mode", "keyword"],
         text=True,
         capture_output=True,
     )

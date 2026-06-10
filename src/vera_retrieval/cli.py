@@ -5,7 +5,7 @@ import json
 import sys
 
 from .convert import convert
-from .document import SDXDocument
+from .document import VeraDocument
 
 
 def _str_to_bool(value: str) -> bool:
@@ -30,14 +30,14 @@ def cmd_convert(args) -> int:
 
 
 def cmd_inspect(args) -> int:
-    doc = SDXDocument.open(args.file)
+    doc = VeraDocument.open(args.file)
     try:
         info = doc.inspect()
         if args.json:
             print(json.dumps({"file": args.file, **info}))
             return 0
         print(f"File: {args.file}")
-        print(f"Format: {info.get('format_name', 'SDX')} v{info.get('format_version')}")
+        print(f"Format: {info.get('format_name', 'VERA')} v{info.get('format_version')}")
         print(f"Source: {info.get('source_file_name') or info.get('source')}")
         print(f"Pages: {info.get('pages')}")
         print(f"Chunks: {info.get('chunks')}")
@@ -51,7 +51,7 @@ def cmd_inspect(args) -> int:
 
 
 def cmd_search(args) -> int:
-    doc = SDXDocument.open(args.file)
+    doc = VeraDocument.open(args.file)
     try:
         results = doc.search(args.query, mode=args.mode, top_k=args.top_k)
         if args.json:
@@ -78,7 +78,7 @@ def cmd_search(args) -> int:
 
 
 def cmd_validate(args) -> int:
-    doc = SDXDocument.open(args.file)
+    doc = VeraDocument.open(args.file)
     try:
         report = doc.validate()
     finally:
@@ -87,7 +87,7 @@ def cmd_validate(args) -> int:
     if args.json:
         print(json.dumps({"file": args.file, **report}))
         return 0 if report["ok"] else 1
-    print(f"SDX validation: {'PASS' if report['ok'] else 'FAIL'}")
+    print(f"VERA validation: {'PASS' if report['ok'] else 'FAIL'}")
     print(f"File: {args.file}")
     counts = report["counts"]
     print(f"Documents: {counts['documents']}")
@@ -105,7 +105,7 @@ def cmd_validate(args) -> int:
 def cmd_workbench(args) -> int:
     import subprocess
 
-    command = [sys.executable, "-m", "streamlit", "run", "app/sdx_workbench.py"]
+    command = [sys.executable, "-m", "streamlit", "run", "app/vera_workbench.py"]
     raise SystemExit(subprocess.call(command))
 
 
@@ -137,10 +137,10 @@ def cmd_eval(args) -> int:
 
 
 def build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(prog="sdx", description="Semantic Document eXchange CLI")
+    parser = argparse.ArgumentParser(prog="vera", description="Vector-Embedded Retrieval Archive CLI")
     sub = parser.add_subparsers(dest="command", required=True)
 
-    convert_p = sub.add_parser("convert", help="Convert a PDF to an SDX file")
+    convert_p = sub.add_parser("convert", help="Convert a PDF to a VERA file")
     convert_p.add_argument("input")
     convert_p.add_argument("output")
     convert_p.add_argument("--model", default="hashing")
@@ -151,12 +151,12 @@ def build_parser() -> argparse.ArgumentParser:
     convert_p.add_argument("--json", action="store_true", help="Emit machine-readable JSON")
     convert_p.set_defaults(func=cmd_convert)
 
-    inspect_p = sub.add_parser("inspect", help="Inspect an SDX file")
+    inspect_p = sub.add_parser("inspect", help="Inspect a VERA file")
     inspect_p.add_argument("file")
     inspect_p.add_argument("--json", action="store_true", help="Emit machine-readable JSON")
     inspect_p.set_defaults(func=cmd_inspect)
 
-    search_p = sub.add_parser("search", help="Search an SDX file")
+    search_p = sub.add_parser("search", help="Search a VERA file")
     search_p.add_argument("file")
     search_p.add_argument("query")
     search_p.add_argument("--mode", choices=["semantic", "keyword", "hybrid"], default="hybrid")
@@ -165,15 +165,15 @@ def build_parser() -> argparse.ArgumentParser:
     search_p.add_argument("--figures", action="store_true", help="Include figure metadata/captions in --json output")
     search_p.set_defaults(func=cmd_search)
 
-    validate_p = sub.add_parser("validate", help="Validate an SDX file")
+    validate_p = sub.add_parser("validate", help="Validate a VERA file")
     validate_p.add_argument("file")
     validate_p.add_argument("--json", action="store_true", help="Emit machine-readable JSON")
     validate_p.set_defaults(func=cmd_validate)
 
-    workbench_p = sub.add_parser("workbench", help="Launch the optional Streamlit SDX Workbench")
+    workbench_p = sub.add_parser("workbench", help="Launch the optional Streamlit VERA Workbench")
     workbench_p.set_defaults(func=cmd_workbench)
 
-    mcp_p = sub.add_parser("mcp", help="Run the MCP server (stdio) exposing SDX tools to AI agents")
+    mcp_p = sub.add_parser("mcp", help="Run the MCP server (stdio) exposing VERA tools to AI agents")
     mcp_p.set_defaults(func=cmd_mcp)
 
     eval_p = sub.add_parser("eval", help="Evaluate retrieval quality against a query file")

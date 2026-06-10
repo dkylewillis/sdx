@@ -1,6 +1,6 @@
-"""Retrieval quality evaluation for SDX files.
+"""Retrieval quality evaluation for VERA files.
 
-Runs a set of expected-answer queries against an SDX document and reports
+Runs a set of expected-answer queries against a VERA document and reports
 hit rate and mean reciprocal rank (MRR) so chunking/embedding/search changes
 can be compared objectively.
 """
@@ -12,7 +12,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
-from .document import SDXDocument, SearchResult
+from .document import VeraDocument, SearchResult
 
 MODES = ("semantic", "keyword", "hybrid")
 
@@ -78,7 +78,7 @@ def load_queries(path: str) -> list[QueryCase]:
 
 
 def evaluate_document(
-    doc: SDXDocument,
+    doc: VeraDocument,
     cases: list[QueryCase],
     mode: str = "hybrid",
     top_k: int = 5,
@@ -120,12 +120,12 @@ def evaluate_document(
 
 
 def evaluate(
-    sdx_path: str,
+    vera_path: str,
     queries_path: str,
     mode: str = "hybrid",
     top_k: int = 5,
 ) -> dict[str, Any]:
-    """Evaluate an SDX file against a query file.
+    """Evaluate a VERA file against a query file.
 
     mode may be one of semantic/keyword/hybrid, or "all" to compare every mode.
     """
@@ -134,13 +134,13 @@ def evaluate(
     for m in modes:
         if m not in MODES:
             raise ValueError(f"mode must be one of {', '.join(MODES)}, or 'all'")
-    doc = SDXDocument.open(sdx_path)
+    doc = VeraDocument.open(vera_path)
     try:
         reports = [evaluate_document(doc, cases, mode=m, top_k=top_k) for m in modes]
     finally:
         doc.close()
     return {
-        "file": sdx_path,
+        "file": vera_path,
         "queries_file": queries_path,
         "reports": reports,
     }

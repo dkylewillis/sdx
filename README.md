@@ -1,21 +1,21 @@
-# SDX — Semantic Document eXchange
+# VERA — Vector-Embedded Retrieval Archive
 
-SDX is a portable semantic document exchange format: one SQLite `.sdx` file that carries a document **and** everything needed to search it — parsed structure, chunks, embeddings, keyword index, figures, and citation metadata.
+VERA is a Vector-Embedded Retrieval Archive: one SQLite `.vera` file that carries a document **and** everything needed to search it — parsed structure, chunks, embeddings, keyword index, figures, and citation metadata.
 
 Tagline: **Convert once. Search anywhere.**
 
-## What is SDX?
+## What is VERA?
 
 ```text
-   The old way (every app repeats this):       The SDX way (do it once):
+   The old way (every app repeats this):       The VERA way (do it once):
 
-   PDF ─> parse ─> chunk ─> embed ─┐           PDF ──> sdx convert ──> ordinance.sdx
+   PDF ─> parse ─> chunk ─> embed ─┐           PDF ──> vera convert ──> ordinance.vera
                                    │                                       │
                               vector DB             ┌──────────────────────┼──────────────┐
                                    │                ▼                      ▼              ▼
                                 search           your app             CLI search      workbench
 
-   ┌─────────────────── ordinance.sdx (a single SQLite file) ────────────────────┐
+   ┌─────────────────── ordinance.vera (a single SQLite file) ────────────────────┐
    │                                                                             │
    │   original PDF      parsed pages & blocks       chunks with citations       │
    │   (assets)          headings / paragraphs /     "Ch 110 > Art 5 > Parking"  │
@@ -33,20 +33,20 @@ A search result always points back to its source: filename, page range, heading 
 ## Quick start
 
 ```bash
-sdx convert input.pdf output.sdx
-sdx inspect output.sdx
-sdx validate output.sdx
-sdx search output.sdx "stream buffer requirements" --mode hybrid
+vera convert input.pdf output.vera
+vera inspect output.vera
+vera validate output.vera
+vera search output.vera "stream buffer requirements" --mode hybrid
 ```
 
 Python:
 
 ```python
-from sdx import convert, SDXDocument
+from vera_retrieval import convert, VeraDocument
 
-convert("input.pdf", "output.sdx")
+convert("input.pdf", "output.vera")
 
-doc = SDXDocument.open("output.sdx")
+doc = VeraDocument.open("output.vera")
 results = doc.search("when is detention required", mode="hybrid", top_k=5)
 for r in results:
     print(r.score, r.page_start, r.heading_path)
@@ -55,7 +55,7 @@ for r in results:
 
 ## Features
 
-- **Single-file format** — a `.sdx` file is a normal SQLite database with a standardized schema. No server, no vector database, no re-ingestion to open one.
+- **Single-file format** — a `.vera` file is a normal SQLite database with a standardized schema. No server, no vector database, no re-ingestion to open one.
 - **Three search modes** — `semantic` (brute-force cosine over stored embeddings), `keyword` (SQLite FTS5 / bm25), and `hybrid` (both score sets min-max normalized and blended equally).
 - **Structured parsing** — headings are detected from font size/weight and produce hierarchical heading paths (`Chapter 110 > Article 5 > Parking`); rotated watermark text is filtered out; chunks never span pages and map back to their source blocks via `chunk_blocks`.
 - **Figures and captions** — embedded images are extracted into the `assets` table; caption blocks ("Figure 3: Detention pond sizing diagram") are detected, flow into chunk text so figures are searchable, and are returned alongside figures:
@@ -67,28 +67,28 @@ for fig in doc.figures_for(result, include_data=True):  # figures on the result'
 ```
 
 - **Pluggable embeddings** — a deterministic local hashing embedder (384-dim, zero dependencies) is the default; `--model sentence-transformers/all-MiniLM-L6-v2` enables neural embeddings via the optional `ml` extra.
-- **Transparent** — every file records its parser, chunking strategy, and embedding model in `sdx_metadata`.
+- **Transparent** — every file records its parser, chunking strategy, and embedding model in `vera_metadata`.
 
 ## CLI
 
 | Command | Purpose |
 |---------|---------|
-| `sdx convert input.pdf output.sdx` | Convert a PDF (options: `--model`, `--chunk-size`, `--overlap`) |
-| `sdx inspect output.sdx` | Print metadata: pages, chunks, model, parser |
-| `sdx validate output.sdx` | Check schema, counts, and index consistency |
-| `sdx search output.sdx "query"` | Search (`--mode semantic\|keyword\|hybrid`, `--top-k`) |
-| `sdx eval output.sdx queries.json` | Measure retrieval quality against an expected-answer query set |
-| `sdx mcp` | Run the MCP server (stdio) exposing SDX tools to AI agents |
-| `sdx workbench` | Launch the Streamlit GUI |
+| `vera convert input.pdf output.vera` | Convert a PDF (options: `--model`, `--chunk-size`, `--overlap`) |
+| `vera inspect output.vera` | Print metadata: pages, chunks, model, parser |
+| `vera validate output.vera` | Check schema, counts, and index consistency |
+| `vera search output.vera "query"` | Search (`--mode semantic\|keyword\|hybrid`, `--top-k`) |
+| `vera eval output.vera queries.json` | Measure retrieval quality against an expected-answer query set |
+| `vera mcp` | Run the MCP server (stdio) exposing VERA tools to AI agents |
+| `vera workbench` | Launch the Streamlit GUI |
 
 Every command accepts `--json` for machine-readable output (see below).
 
-## Using SDX with AI agents
+## Using VERA with AI agents
 
-SDX was built to give agents grounded, citation-ready context from large documents without a retrieval service. Agents can call the CLI directly — every command supports `--json` and meaningful exit codes (`validate`/`eval` exit non-zero on failure):
+VERA was built to give agents grounded, citation-ready context from large documents without a retrieval service. Agents can call the CLI directly — every command supports `--json` and meaningful exit codes (`validate`/`eval` exit non-zero on failure):
 
 ```bash
-sdx search ordinance.sdx "when is detention required" --top-k 5 --json --figures
+vera search ordinance.vera "when is detention required" --top-k 5 --json --figures
 ```
 
 ```json
@@ -116,10 +116,10 @@ Every result carries its citation (source file, page, heading path), so agent an
 
 ### MCP server
 
-SDX also ships a [Model Context Protocol](https://modelcontextprotocol.io/) server so MCP-capable agents (VS Code, Claude Desktop, etc.) can use SDX as native tools — `sdx_search`, `sdx_inspect`, `sdx_validate`, `sdx_figures`, and `sdx_get_page`. Install the `mcp` extra and point your client at `sdx mcp`:
+VERA also ships a [Model Context Protocol](https://modelcontextprotocol.io/) server so MCP-capable agents (VS Code, Claude Desktop, etc.) can use VERA as native tools — `vera_search`, `vera_inspect`, `vera_validate`, `vera_figures`, and `vera_get_page`. Install the `mcp` extra and point your client at `vera mcp`:
 
 ```bash
-pip install sdx[mcp]
+pip install vera-retrieval[mcp]
 ```
 
 Example VS Code configuration (`.vscode/mcp.json`):
@@ -127,9 +127,9 @@ Example VS Code configuration (`.vscode/mcp.json`):
 ```json
 {
   "servers": {
-    "sdx": {
+    "vera": {
       "command": "uv",
-      "args": ["run", "--extra", "mcp", "sdx", "mcp"]
+      "args": ["run", "--extra", "mcp", "vera", "mcp"]
     }
   }
 }
@@ -148,7 +148,7 @@ uv run --extra dev pytest -q
 Measure retrieval quality against an expected-answer query set:
 
 ```bash
-uv run python -m sdx.cli eval output.sdx queries.json --mode all --top-k 5
+uv run python -m vera_retrieval.cli eval output.vera queries.json --mode all --top-k 5
 ```
 
 Query files are JSON (or YAML with pyyaml installed) lists of cases:
@@ -167,19 +167,19 @@ The command reports hit rate and MRR per search mode and exits non-zero on any m
 
 Current baseline on the stormwater manual (2,442 chunks, hashing embedder): hybrid and keyword both hit 9/10 at MRR 0.900.
 
-## SDX Workbench
+## VERA Workbench
 
 For easy manual testing, install the optional Streamlit extra and launch the workbench:
 
 ```bash
-uv run --extra workbench python -m sdx.cli workbench
+uv run --extra workbench python -m vera_retrieval.cli workbench
 ```
 
-The workbench lets you upload a PDF, convert it to `.sdx`, inspect metadata, run validation, browse chunks, compare semantic/keyword/hybrid search results, and view figures (with captions) co-located with each result.
+The workbench lets you upload a PDF, convert it to `.vera`, inspect metadata, run validation, browse chunks, compare semantic/keyword/hybrid search results, and view figures (with captions) co-located with each result.
 
 ## Status
 
-SDX is v0.1 and experimental. The schema and format may change. See [docs/sdx-spec-v0.1.md](docs/sdx-spec-v0.1.md) for the format specification.
+VERA is v0.1 and experimental. The schema and format may change. See [docs/vera-spec-v0.1.md](docs/vera-spec-v0.1.md) for the format specification.
 
 ## License
 

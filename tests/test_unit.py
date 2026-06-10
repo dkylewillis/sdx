@@ -2,17 +2,17 @@
 
 import pytest
 
-from sdx.convert import chunk_pages, _detect_heading
-from sdx.embeddings import (
+from vera_retrieval.convert import chunk_pages, _detect_heading
+from vera_retrieval.embeddings import (
     HashingEmbedder,
     cosine_similarity,
     deserialize_vector,
     get_embedder,
     serialize_vector,
 )
-from sdx.document import SDXDocument, SearchResult
-from sdx.cli import _str_to_bool
-from sdx.parsers.pdf import ParsedPage
+from vera_retrieval.document import VeraDocument, SearchResult
+from vera_retrieval.cli import _str_to_bool
+from vera_retrieval.parsers.pdf import ParsedPage
 
 
 # ---------------------------------------------------------------------------
@@ -241,20 +241,20 @@ class TestSearchResult:
 
 
 # ---------------------------------------------------------------------------
-# SDXDocument.search — invalid mode
+# VeraDocument.search — invalid mode
 # ---------------------------------------------------------------------------
 
-class TestSDXDocumentSearchValidation:
+class TestVeraDocumentSearchValidation:
     def test_invalid_mode_raises_value_error(self, tmp_path):
         from test_convert_search import make_pdf
-        from sdx import convert
+        from vera_retrieval import convert
 
         pdf = tmp_path / "test.pdf"
-        sdx = tmp_path / "test.sdx"
+        vera = tmp_path / "test.vera"
         make_pdf(pdf)
-        convert(str(pdf), str(sdx), model="hashing")
+        convert(str(pdf), str(vera), model="hashing")
 
-        doc = SDXDocument.open(str(sdx))
+        doc = VeraDocument.open(str(vera))
         try:
             with pytest.raises(ValueError, match="mode must be"):
                 doc.search("query", mode="fuzzy")
@@ -268,19 +268,19 @@ class TestSDXDocumentSearchValidation:
 
 class TestConvertErrors:
     def test_missing_input_raises_file_not_found(self, tmp_path):
-        from sdx.convert import convert as sdx_convert
+        from vera_retrieval.convert import convert as vera_convert
 
         with pytest.raises(FileNotFoundError):
-            sdx_convert(str(tmp_path / "missing.pdf"), str(tmp_path / "out.sdx"))
+            vera_convert(str(tmp_path / "missing.pdf"), str(tmp_path / "out.vera"))
 
     def test_unsupported_parser_raises_value_error(self, tmp_path):
         from test_convert_search import make_pdf
-        from sdx.convert import convert as sdx_convert
+        from vera_retrieval.convert import convert as vera_convert
 
         pdf = tmp_path / "test.pdf"
         make_pdf(pdf)
         with pytest.raises(ValueError, match="parser"):
-            sdx_convert(str(pdf), str(tmp_path / "out.sdx"), parser="tika")
+            vera_convert(str(pdf), str(tmp_path / "out.vera"), parser="tika")
 
 
 # ---------------------------------------------------------------------------

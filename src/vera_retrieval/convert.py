@@ -212,11 +212,11 @@ def convert(
         now = _utc_now()
         doc_id = "doc_001"
         metadata = {
-            "format_name": "SDX",
+            "format_name": "VERA",
             "format_version": FORMAT_VERSION,
             "created_at": now,
-            "created_by": "sdx",
-            "creator_library": "sdx-python/0.1.0",
+            "created_by": "vera",
+            "creator_library": "vera-retrieval-python/0.1.0",
             "source_file_name": source.name,
             "source_file_hash": source_hash,
             "source_mime_type": mime_type,
@@ -226,7 +226,7 @@ def convert(
             "parser_name": parser,
             "parser_version": "pymupdf",
         }
-        conn.executemany("INSERT INTO sdx_metadata(key, value) VALUES (?, ?)", metadata.items())
+        conn.executemany("INSERT INTO vera_metadata(key, value) VALUES (?, ?)", metadata.items())
         conn.execute(
             "INSERT INTO documents VALUES (?, ?, ?, ?, ?, ?, ?)",
             (doc_id, source.stem, source.name, mime_type, source_hash, len(pages), now),

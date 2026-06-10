@@ -31,7 +31,7 @@ def _open_fitz():
     try:
         import fitz  # PyMuPDF
     except Exception as exc:  # pragma: no cover
-        raise RuntimeError("PyMuPDF is required for PDF parsing: install sdx with pymupdf") from exc
+        raise RuntimeError("PyMuPDF is required for PDF parsing: install vera with pymupdf") from exc
     return fitz
 
 

@@ -1,13 +1,13 @@
-# Using SDX as an AI agent
+# Using VERA as an AI agent
 
-This file teaches AI coding agents how to use SDX to retrieve context from documents.
+This file teaches AI coding agents how to use VERA to retrieve context from documents.
 
-## What is an `.sdx` file?
+## What is an `.vera` file?
 
 A single SQLite file containing a document's full text, structure (pages, headings,
 figures), and pre-computed embeddings. You can search it instantly — no parsing, no
 chunking, no embedding API calls, no vector database. See
-[docs/sdx-spec-v0.1.md](docs/sdx-spec-v0.1.md) for the format specification.
+[docs/vera-spec-v0.1.md](docs/vera-spec-v0.1.md) for the format specification.
 
 ## Quick reference
 
@@ -15,30 +15,30 @@ All commands support `--json` for machine-readable output on stdout.
 
 ```bash
 # Search a document (hybrid = semantic + keyword, best default)
-sdx search manual.sdx "stormwater detention requirements" --top-k 5 --json
+vera search manual.vera "stormwater detention requirements" --top-k 5 --json
 
 # Include figure/table metadata near each result
-sdx search manual.sdx "pipe sizing chart" --json --figures
+vera search manual.vera "pipe sizing chart" --json --figures
 
 # Keyword-only or semantic-only search
-sdx search manual.sdx "section 4.2" --mode keyword --json
-sdx search manual.sdx "how big should the pond be" --mode semantic --json
+vera search manual.vera "section 4.2" --mode keyword --json
+vera search manual.vera "how big should the pond be" --mode semantic --json
 
 # What's in this file?
-sdx inspect manual.sdx --json
+vera inspect manual.vera --json
 
 # Is this file well-formed? (exit code 0 = valid, 1 = invalid)
-sdx validate manual.sdx --json
+vera validate manual.vera --json
 
-# Create an .sdx from a PDF
-sdx convert manual.pdf manual.sdx
+# Create an .vera from a PDF
+vera convert manual.pdf manual.vera
 ```
 
 ### Search result shape (`--json`)
 
 ```json
 {
-  "file": "manual.sdx",
+  "file": "manual.vera",
   "query": "stormwater detention requirements",
   "mode": "hybrid",
   "results": [
@@ -71,25 +71,25 @@ sdx convert manual.pdf manual.sdx
 
 ## MCP server
 
-SDX ships an MCP server (stdio) exposing the same capabilities as tools:
+VERA ships an MCP server (stdio) exposing the same capabilities as tools:
 
 | Tool | Purpose |
 |------|---------|
-| `sdx_search` | Hybrid/semantic/keyword search with optional figure metadata |
-| `sdx_inspect` | Document metadata, page/chunk counts, embedding model |
-| `sdx_validate` | Integrity check |
-| `sdx_figures` | List figures/images with captions, optionally by page range |
-| `sdx_get_page` | Full text of a specific page |
+| `vera_search` | Hybrid/semantic/keyword search with optional figure metadata |
+| `vera_inspect` | Document metadata, page/chunk counts, embedding model |
+| `vera_validate` | Integrity check |
+| `vera_figures` | List figures/images with captions, optionally by page range |
+| `vera_get_page` | Full text of a specific page |
 
-Requires the `mcp` extra: `pip install sdx[mcp]`. Example VS Code config
+Requires the `mcp` extra: `pip install vera-retrieval[mcp]`. Example VS Code config
 (`.vscode/mcp.json`):
 
 ```json
 {
   "servers": {
-    "sdx": {
+    "vera": {
       "command": "uv",
-      "args": ["run", "--extra", "mcp", "sdx", "mcp"]
+      "args": ["run", "--extra", "mcp", "vera", "mcp"]
     }
   }
 }
@@ -100,7 +100,7 @@ Requires the `mcp` extra: `pip install sdx[mcp]`. Example VS Code config
 - Python 3.10+, dependencies managed with [uv](https://docs.astral.sh/uv/):
   `uv sync --extra dev --extra ml --extra workbench --extra mcp`
 - Run tests with `pytest` (all tests must pass before committing).
-- Core code lives in [src/sdx](src/sdx); the format spec is
-  [docs/sdx-spec-v0.1.md](docs/sdx-spec-v0.1.md) — keep code and spec in sync.
-- Retrieval quality is tracked with `sdx eval` against the query sets in
+- Core code lives in [src/vera_retrieval](src/vera_retrieval); the format spec is
+  [docs/vera-spec-v0.1.md](docs/vera-spec-v0.1.md) — keep code and spec in sync.
+- Retrieval quality is tracked with `vera eval` against the query sets in
   [examples](examples); don't regress the baselines in the README.

@@ -4,9 +4,9 @@ import sqlite3
 
 import pytest
 
-from sdx import SDXDocument, convert
-from sdx.convert import build_chunks_from_blocks
-from sdx.parsers import ParsedBlock, parse_pdf_structured
+from vera_retrieval import VeraDocument, convert
+from vera_retrieval.convert import build_chunks_from_blocks
+from vera_retrieval.parsers import ParsedBlock, parse_pdf_structured
 
 
 def make_structured_pdf(path, with_image: bool = True):
@@ -143,7 +143,7 @@ class TestBuildChunksFromBlocks:
 
 class TestConvertWithBlocks:
     def test_blocks_and_chunk_blocks_populated(self, tmp_path, structured_pdf):
-        out = tmp_path / "out.sdx"
+        out = tmp_path / "out.vera"
         convert(str(structured_pdf), str(out), model="hashing")
         conn = sqlite3.connect(out)
         assert conn.execute("SELECT COUNT(*) FROM blocks WHERE block_type='heading'").fetchone()[0] >= 3
@@ -152,7 +152,7 @@ class TestConvertWithBlocks:
         conn.close()
 
     def test_heading_path_stored_in_chunks(self, tmp_path, structured_pdf):
-        out = tmp_path / "out.sdx"
+        out = tmp_path / "out.vera"
         convert(str(structured_pdf), str(out), model="hashing")
         conn = sqlite3.connect(out)
         paths = [row[0] for row in conn.execute("SELECT heading_path FROM chunks")]
@@ -160,7 +160,7 @@ class TestConvertWithBlocks:
         assert any("Chapter 110 Zoning" in (p or "") for p in paths)
 
     def test_image_asset_stored(self, tmp_path, structured_pdf):
-        out = tmp_path / "out.sdx"
+        out = tmp_path / "out.vera"
         convert(str(structured_pdf), str(out), model="hashing")
         conn = sqlite3.connect(out)
         count = conn.execute("SELECT COUNT(*) FROM assets WHERE asset_type='extracted_image'").fetchone()[0]
@@ -168,9 +168,9 @@ class TestConvertWithBlocks:
         assert count == 1
 
     def test_validation_still_passes(self, tmp_path, structured_pdf):
-        out = tmp_path / "out.sdx"
+        out = tmp_path / "out.vera"
         convert(str(structured_pdf), str(out), model="hashing")
-        doc = SDXDocument.open(str(out))
+        doc = VeraDocument.open(str(out))
         try:
             report = doc.validate()
         finally:
@@ -180,38 +180,38 @@ class TestConvertWithBlocks:
 
 class TestFiguresAPI:
     @pytest.fixture
-    def sdx_doc(self, tmp_path, structured_pdf):
-        out = tmp_path / "out.sdx"
+    def vera_doc(self, tmp_path, structured_pdf):
+        out = tmp_path / "out.vera"
         convert(str(structured_pdf), str(out), model="hashing")
-        doc = SDXDocument.open(str(out))
+        doc = VeraDocument.open(str(out))
         yield doc
         doc.close()
 
-    def test_figures_lists_extracted_images(self, sdx_doc):
-        figures = sdx_doc.figures()
+    def test_figures_lists_extracted_images(self, vera_doc):
+        figures = vera_doc.figures()
         assert len(figures) == 1
         assert figures[0]["page_number"] == 1
         assert figures[0]["mime_type"].startswith("image/")
         assert "data" not in figures[0]
 
-    def test_figures_include_data(self, sdx_doc):
-        figures = sdx_doc.figures(include_data=True)
+    def test_figures_include_data(self, vera_doc):
+        figures = vera_doc.figures(include_data=True)
         assert figures[0]["data"]
 
-    def test_figures_page_filter(self, sdx_doc):
-        assert len(sdx_doc.figures(page_start=1, page_end=1)) == 1
-        assert sdx_doc.figures(page_start=2, page_end=2) == []
+    def test_figures_page_filter(self, vera_doc):
+        assert len(vera_doc.figures(page_start=1, page_end=1)) == 1
+        assert vera_doc.figures(page_start=2, page_end=2) == []
 
-    def test_figures_for_search_result(self, sdx_doc):
-        result = sdx_doc.search("restaurant parking", mode="keyword", top_k=1)[0]
+    def test_figures_for_search_result(self, vera_doc):
+        result = vera_doc.search("restaurant parking", mode="keyword", top_k=1)[0]
         assert result.page_start == 1
-        figures = sdx_doc.figures_for(result)
+        figures = vera_doc.figures_for(result)
         assert len(figures) == 1
 
-    def test_no_figures_for_other_page_result(self, sdx_doc):
-        result = sdx_doc.search("detention impervious", mode="keyword", top_k=1)[0]
+    def test_no_figures_for_other_page_result(self, vera_doc):
+        result = vera_doc.search("detention impervious", mode="keyword", top_k=1)[0]
         assert result.page_start == 2
-        assert sdx_doc.figures_for(result) == []
+        assert vera_doc.figures_for(result) == []
 
 
 def make_captioned_pdf(path):
@@ -253,9 +253,9 @@ class TestCaptions:
         assert not any("Table 1 lists" in c for c in captions)
 
     def test_caption_text_searchable_in_chunks(self, tmp_path, captioned_pdf):
-        out = tmp_path / "out.sdx"
+        out = tmp_path / "out.vera"
         convert(str(captioned_pdf), str(out), model="hashing")
-        doc = SDXDocument.open(str(out))
+        doc = VeraDocument.open(str(out))
         try:
             results = doc.search("detention pond sizing diagram", mode="keyword", top_k=1)
             assert results
@@ -264,9 +264,9 @@ class TestCaptions:
             doc.close()
 
     def test_figures_return_caption(self, tmp_path, captioned_pdf):
-        out = tmp_path / "out.sdx"
+        out = tmp_path / "out.vera"
         convert(str(captioned_pdf), str(out), model="hashing")
-        doc = SDXDocument.open(str(out))
+        doc = VeraDocument.open(str(out))
         try:
             figures = doc.figures()
             assert len(figures) == 1
@@ -276,9 +276,9 @@ class TestCaptions:
             doc.close()
 
     def test_figure_without_caption_returns_none(self, tmp_path, structured_pdf):
-        out = tmp_path / "out.sdx"
+        out = tmp_path / "out.vera"
         convert(str(structured_pdf), str(out), model="hashing")
-        doc = SDXDocument.open(str(out))
+        doc = VeraDocument.open(str(out))
         try:
             figures = doc.figures()
             assert figures[0]["caption"] is None

@@ -52,14 +52,14 @@ class SearchResult:
         return self.__dict__.copy()
 
 
-class SDXDocument:
+class VeraDocument:
     def __init__(self, path: str, conn: sqlite3.Connection):
         self.path = path
         self.conn = conn
         self.conn.row_factory = sqlite3.Row
 
     @classmethod
-    def open(cls, path: str) -> "SDXDocument":
+    def open(cls, path: str) -> "VeraDocument":
         conn = sqlite3.connect(path)
         return cls(path, conn)
 
@@ -67,7 +67,7 @@ class SDXDocument:
         self.conn.close()
 
     def inspect(self) -> dict[str, Any]:
-        metadata = {row["key"]: row["value"] for row in self.conn.execute("SELECT key, value FROM sdx_metadata")}
+        metadata = {row["key"]: row["value"] for row in self.conn.execute("SELECT key, value FROM vera_metadata")}
         doc = self.conn.execute("SELECT * FROM documents LIMIT 1").fetchone()
         metadata.update(
             {
@@ -81,11 +81,11 @@ class SDXDocument:
         return metadata
 
     def validate(self) -> dict[str, Any]:
-        """Validate the SDX container, schema, metadata, indexes, and embeddings."""
+        """Validate the VERA container, schema, metadata, indexes, and embeddings."""
         issues: list[str] = []
         warnings: list[str] = []
         required_tables = {
-            "sdx_metadata",
+            "vera_metadata",
             "documents",
             "pages",
             "blocks",
@@ -119,8 +119,8 @@ class SDXDocument:
         }
 
         metadata = {}
-        if "sdx_metadata" in existing_tables:
-            metadata = {row["key"]: row["value"] for row in self.conn.execute("SELECT key, value FROM sdx_metadata")}
+        if "vera_metadata" in existing_tables:
+            metadata = {row["key"]: row["value"] for row in self.conn.execute("SELECT key, value FROM vera_metadata")}
             for key in REQUIRED_METADATA_KEYS:
                 if key not in metadata:
                     issues.append(f"Missing required metadata key: {key}")

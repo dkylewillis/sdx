@@ -1,12 +1,12 @@
-# SDX Format Specification
+# VERA Format Specification
 
 **Version:** 0.1 (draft)
 **Status:** Experimental — the schema may change before 1.0
 **License:** Apache-2.0
 
-SDX (Semantic Document eXchange) is a portable, single-file format for semantically searchable documents. An `.sdx` file carries a source document together with its parsed structure, text chunks, vector embeddings, keyword index, extracted figures, and citation metadata, so that any compatible application can search the document without re-parsing, re-chunking, or re-embedding it.
+VERA (Vector-Embedded Retrieval Archive) is a portable, single-file format for semantically searchable documents. An `.vera` file carries a source document together with its parsed structure, text chunks, vector embeddings, keyword index, extracted figures, and citation metadata, so that any compatible application can search the document without re-parsing, re-chunking, or re-embedding it.
 
-This document specifies what a conforming **writer** must produce and what a conforming **reader** can rely on. The reference implementation is the [`sdx` Python package](https://github.com/dkylewillis/sdx).
+This document specifies what a conforming **writer** must produce and what a conforming **reader** can rely on. The reference implementation is the [`vera-retrieval` Python package](https://github.com/dkylewillis/vera-retrieval).
 
 The key words MUST, SHOULD, and MAY are to be interpreted as described in RFC 2119.
 
@@ -14,16 +14,16 @@ The key words MUST, SHOULD, and MAY are to be interpreted as described in RFC 21
 
 ## 1. Container
 
-- An SDX file **MUST** be a valid SQLite 3 database.
-- The recommended file extension is `.sdx`.
+- A VERA file **MUST** be a valid SQLite 3 database.
+- The recommended file extension is `.vera`.
 - The database **MUST** contain the tables defined in Section 3 and **MUST** pass `PRAGMA integrity_check`.
 - The FTS index (`chunks_fts`) requires SQLite compiled with the FTS5 extension (default in virtually all distributions).
 - Readers **MUST** ignore unrecognized tables, columns, and metadata keys. Writers **MAY** add their own, but extension tables SHOULD be prefixed (e.g. `x_myapp_*`) to avoid collisions with future spec versions.
 
-## 2. Metadata (`sdx_metadata`)
+## 2. Metadata (`vera_metadata`)
 
 ```sql
-CREATE TABLE sdx_metadata (
+CREATE TABLE vera_metadata (
     key   TEXT PRIMARY KEY,
     value TEXT NOT NULL
 );
@@ -33,15 +33,15 @@ The following keys **MUST** be present:
 
 | Key | Meaning | Example |
 |-----|---------|---------|
-| `format_name` | Always `SDX` | `SDX` |
+| `format_name` | Always `VERA` | `VERA` |
 | `format_version` | Spec version of this file | `0.1` |
 | `created_at` | ISO-8601 UTC timestamp | `2026-06-09T19:52:31+00:00` |
-| `created_by` | Tool or user that created the file | `sdx-cli` |
-| `creator_library` | Library name/version | `sdx 0.1.0` |
+| `created_by` | Tool or user that created the file | `vera-cli` |
+| `creator_library` | Library name/version | `vera 0.1.0` |
 | `source_file_name` | Original filename | `ordinance.pdf` |
 | `source_file_hash` | SHA-256 hex digest of the source file | `9f86d08…` |
 | `source_mime_type` | MIME type of the source | `application/pdf` |
-| `default_embedding_model` | Model used for stored embeddings (Section 6) | `sdx-hashing-384` |
+| `default_embedding_model` | Model used for stored embeddings (Section 6) | `vera-hashing-384` |
 | `default_embedding_dimension` | Vector dimension | `384` |
 | `chunking_strategy` | Writer-defined description of chunking | `heading_block_sliding_window:500:75` |
 | `parser_name` | Parser used | `pymupdf` |
@@ -51,7 +51,7 @@ The following keys **MUST** be present:
 
 ## 3. Required tables
 
-Every SDX file **MUST** contain these tables (writers create them exactly as below; readers SHOULD tolerate additional columns):
+Every VERA file **MUST** contain these tables (writers create them exactly as below; readers SHOULD tolerate additional columns):
 
 ```sql
 CREATE TABLE documents (
@@ -130,7 +130,7 @@ CREATE VIRTUAL TABLE chunks_fts USING fts5(
 );
 ```
 
-Integrity requirements (1–5 enforced by `sdx validate`):
+Integrity requirements (1–5 enforced by `vera validate`):
 
 1. At least one row in `documents`, `pages`, and `chunks`.
 2. Exactly one embedding per chunk for the default model: `COUNT(embeddings) = COUNT(chunks)`.
@@ -166,7 +166,7 @@ v0.1 writers are only required to emit `heading`, `paragraph`, `caption`, and `i
 original_document   page_image   extracted_image   table_json   table_csv   other
 ```
 
-- `original_document` — required, exactly one. `data` holds the unmodified source file bytes; `hash` is its SHA-256 hex digest and **MUST** equal `sdx_metadata.source_file_hash`.
+- `original_document` — required, exactly one. `data` holds the unmodified source file bytes; `hash` is its SHA-256 hex digest and **MUST** equal `vera_metadata.source_file_hash`.
 - `extracted_image` — one per `image` block, with `asset_id = 'asset_' || block_id`. This naming convention is how readers join figures to their location and nearby captions without an additional table.
 
 ## 6. Embeddings
@@ -180,10 +180,10 @@ original_document   page_image   extracted_image   table_json   table_csv   othe
 Semantic search requires embedding the **query with the same model** used at write time. `model_name` values:
 
 - Names beginning `sentence-transformers/` refer to the corresponding [Sentence-Transformers](https://www.sbert.net/) model with `normalize_embeddings=True`.
-- `sdx-hashing-384` is SDX's built-in zero-dependency lexical embedder, defined normatively below so it can be reimplemented in any language.
+- `vera-hashing-384` is VERA's built-in zero-dependency lexical embedder, defined normatively below so it can be reimplemented in any language.
 - Other names are writer-defined; readers that do not recognize a model can still perform keyword search (see conformance levels, Section 8).
 
-### 6.2 The `sdx-hashing-384` embedder (normative)
+### 6.2 The `vera-hashing-384` embedder (normative)
 
 A deterministic feature-hashing embedder. For input text:
 
@@ -213,10 +213,10 @@ Search results SHOULD be citation-ready: chunk text, score, `page_start`/`page_e
 | Level | Requirements | Needs |
 |-------|--------------|-------|
 | **1 — Basic reader** | Open the file, read metadata/chunks/pages, keyword search via FTS5 | SQLite only — no ML stack |
-| **2 — Semantic reader** | Level 1 + embed queries with `default_embedding_model` and rank by cosine similarity | Embedding model (or just BLAKE2b for `sdx-hashing-384`) |
-| **3 — Writer** | Produce files satisfying every MUST in Sections 1–6 and passing `sdx validate` | Full pipeline |
+| **2 — Semantic reader** | Level 1 + embed queries with `default_embedding_model` and rank by cosine similarity | Embedding model (or just BLAKE2b for `vera-hashing-384`) |
+| **3 — Writer** | Produce files satisfying every MUST in Sections 1–6 and passing `vera validate` | Full pipeline |
 
-Level 1 is deliberately trivial: any environment with SQLite can read, cite, and keyword-search an SDX file.
+Level 1 is deliberately trivial: any environment with SQLite can read, cite, and keyword-search a VERA file.
 
 ## 9. Versioning
 

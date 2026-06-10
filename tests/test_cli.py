@@ -7,24 +7,24 @@ from test_convert_search import make_pdf
 
 def test_cli_convert_inspect_search(tmp_path):
     pdf = tmp_path / "manual.pdf"
-    out = tmp_path / "manual.sdx"
+    out = tmp_path / "manual.vera"
     make_pdf(pdf)
 
-    convert_cmd = [sys.executable, "-m", "sdx.cli", "convert", str(pdf), str(out), "--model", "hashing"]
+    convert_cmd = [sys.executable, "-m", "vera_retrieval.cli", "convert", str(pdf), str(out), "--model", "hashing"]
     converted = subprocess.run(convert_cmd, text=True, capture_output=True, check=True)
     assert "Created" in converted.stdout
 
     inspected = subprocess.run(
-        [sys.executable, "-m", "sdx.cli", "inspect", str(out)],
+        [sys.executable, "-m", "vera_retrieval.cli", "inspect", str(out)],
         text=True,
         capture_output=True,
         check=True,
     )
-    assert "Format: SDX v0.1" in inspected.stdout
+    assert "Format: VERA v0.1" in inspected.stdout
     assert "Chunks:" in inspected.stdout
 
     searched = subprocess.run(
-        [sys.executable, "-m", "sdx.cli", "search", str(out), "restaurant parking", "--mode", "hybrid", "--top-k", "1"],
+        [sys.executable, "-m", "vera_retrieval.cli", "search", str(out), "restaurant parking", "--mode", "hybrid", "--top-k", "1"],
         text=True,
         capture_output=True,
         check=True,
@@ -37,12 +37,12 @@ def test_cli_convert_inspect_search(tmp_path):
 def test_cli_json_output_for_agents(tmp_path):
     """Every command supports --json so agents can consume structured output."""
     pdf = tmp_path / "manual.pdf"
-    out = tmp_path / "manual.sdx"
+    out = tmp_path / "manual.vera"
     make_pdf(pdf)
 
     def run(*argv):
         proc = subprocess.run(
-            [sys.executable, "-m", "sdx.cli", *argv],
+            [sys.executable, "-m", "vera_retrieval.cli", *argv],
             text=True,
             capture_output=True,
             check=True,
@@ -51,7 +51,7 @@ def test_cli_json_output_for_agents(tmp_path):
 
     converted = run("convert", str(pdf), str(out), "--model", "hashing", "--json")
     assert converted["ok"] is True
-    assert converted["output"].endswith("manual.sdx")
+    assert converted["output"].endswith("manual.vera")
 
     info = run("inspect", str(out), "--json")
     assert info["format_version"] == "0.1"

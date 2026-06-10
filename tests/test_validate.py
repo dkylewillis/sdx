@@ -2,17 +2,17 @@ import sqlite3
 import subprocess
 import sys
 
-from sdx import SDXDocument, convert
+from vera_retrieval import VeraDocument, convert
 from test_convert_search import make_pdf
 
 
-def test_validate_passes_for_converted_sdx(tmp_path):
+def test_validate_passes_for_converted_vera(tmp_path):
     pdf = tmp_path / "ordinance.pdf"
-    out = tmp_path / "ordinance.sdx"
+    out = tmp_path / "ordinance.vera"
     make_pdf(pdf)
     convert(str(pdf), str(out), model="hashing", chunk_size=40, overlap=5)
 
-    doc = SDXDocument.open(str(out))
+    doc = VeraDocument.open(str(out))
     report = doc.validate()
     doc.close()
 
@@ -25,15 +25,15 @@ def test_validate_passes_for_converted_sdx(tmp_path):
 
 def test_validate_reports_missing_required_metadata(tmp_path):
     pdf = tmp_path / "ordinance.pdf"
-    out = tmp_path / "ordinance.sdx"
+    out = tmp_path / "ordinance.vera"
     make_pdf(pdf)
     convert(str(pdf), str(out), model="hashing")
     conn = sqlite3.connect(out)
-    conn.execute("DELETE FROM sdx_metadata WHERE key='format_version'")
+    conn.execute("DELETE FROM vera_metadata WHERE key='format_version'")
     conn.commit()
     conn.close()
 
-    doc = SDXDocument.open(str(out))
+    doc = VeraDocument.open(str(out))
     report = doc.validate()
     doc.close()
 
@@ -43,7 +43,7 @@ def test_validate_reports_missing_required_metadata(tmp_path):
 
 def test_validate_reports_bad_embedding_dimension(tmp_path):
     pdf = tmp_path / "ordinance.pdf"
-    out = tmp_path / "ordinance.sdx"
+    out = tmp_path / "ordinance.vera"
     make_pdf(pdf)
     convert(str(pdf), str(out), model="hashing")
     conn = sqlite3.connect(out)
@@ -51,7 +51,7 @@ def test_validate_reports_bad_embedding_dimension(tmp_path):
     conn.commit()
     conn.close()
 
-    doc = SDXDocument.open(str(out))
+    doc = VeraDocument.open(str(out))
     report = doc.validate()
     doc.close()
 
@@ -61,16 +61,16 @@ def test_validate_reports_bad_embedding_dimension(tmp_path):
 
 def test_cli_validate_outputs_pass(tmp_path):
     pdf = tmp_path / "manual.pdf"
-    out = tmp_path / "manual.sdx"
+    out = tmp_path / "manual.vera"
     make_pdf(pdf)
     convert(str(pdf), str(out), model="hashing")
 
     result = subprocess.run(
-        [sys.executable, "-m", "sdx.cli", "validate", str(out)],
+        [sys.executable, "-m", "vera_retrieval.cli", "validate", str(out)],
         text=True,
         capture_output=True,
         check=True,
     )
 
-    assert "SDX validation: PASS" in result.stdout
+    assert "VERA validation: PASS" in result.stdout
     assert "Issues: 0" in result.stdout

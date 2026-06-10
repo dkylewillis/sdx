@@ -39,7 +39,7 @@ class HashingEmbedder:
     """Deterministic offline lexical embedder for portable tests and no-network use."""
 
     dimension: int = 384
-    model_name: str = "sdx-hashing-384"
+    model_name: str = "vera-hashing-384"
 
     def embed(self, texts: list[str]) -> list[np.ndarray]:
         vectors = []
@@ -76,7 +76,7 @@ class SentenceTransformerEmbedder:
 @lru_cache(maxsize=4)
 def get_embedder(model: str = "hashing") -> Embedder:
     normalized = (model or "hashing").strip()
-    if normalized in {"hashing", "sdx-hashing-384"}:
+    if normalized in {"hashing", "vera-hashing-384"}:
         return HashingEmbedder()
     if normalized.startswith("sentence-transformers/") or normalized in {"all-MiniLM-L6-v2"}:
         model_name = normalized if normalized.startswith("sentence-transformers/") else f"sentence-transformers/{normalized}"

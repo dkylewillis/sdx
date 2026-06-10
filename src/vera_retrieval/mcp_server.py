@@ -1,63 +1,63 @@
-"""MCP (Model Context Protocol) server exposing SDX files to AI agents.
+"""MCP (Model Context Protocol) server exposing VERA files to AI agents.
 
 Run with:
 
-    sdx mcp
+    vera mcp
 
 or configure in an MCP client (e.g. VS Code .vscode/mcp.json):
 
     {
       "servers": {
-        "sdx": {"command": "uv", "args": ["run", "--extra", "mcp", "sdx", "mcp"]}
+        "vera": {"command": "uv", "args": ["run", "--extra", "mcp", "vera", "mcp"]}
       }
     }
 
-Requires the optional dependency: pip install sdx[mcp]
+Requires the optional dependency: pip install vera-retrieval[mcp]
 """
 
 from __future__ import annotations
 
 from typing import Any
 
-from .document import SDXDocument
+from .document import VeraDocument
 
 
-def _open(file: str) -> SDXDocument:
-    return SDXDocument.open(file)
+def _open(file: str) -> VeraDocument:
+    return VeraDocument.open(file)
 
 
 def build_server():
-    """Create the FastMCP server with SDX tools registered."""
+    """Create the FastMCP server with VERA tools registered."""
     try:
         from mcp.server.fastmcp import FastMCP
     except ImportError as exc:  # pragma: no cover
         raise RuntimeError(
-            "The MCP server requires the optional 'mcp' dependency: pip install sdx[mcp]"
+            "The MCP server requires the optional 'mcp' dependency: pip install vera-retrieval[mcp]"
         ) from exc
 
     server = FastMCP(
-        "sdx",
+        "vera",
         instructions=(
-            "Search SDX (Semantic Document eXchange) files. An .sdx file is a portable "
+            "Search VERA (Vector-Embedded Retrieval Archive) files. An .vera file is a portable "
             "SQLite container holding a document plus chunks, embeddings, a keyword index, "
-            "figures, and citation metadata. Use sdx_search to retrieve citation-ready "
+            "figures, and citation metadata. Use vera_search to retrieve citation-ready "
             "context (text + page + heading path) from a document. Results include page "
             "numbers and heading paths that should be cited when answering."
         ),
     )
 
     @server.tool()
-    def sdx_search(
+    def vera_search(
         file: str,
         query: str,
         mode: str = "hybrid",
         top_k: int = 5,
         include_figures: bool = False,
     ) -> dict[str, Any]:
-        """Search an SDX file and return citation-ready chunks.
+        """Search a VERA file and return citation-ready chunks.
 
         Args:
-            file: Path to the .sdx file.
+            file: Path to the .vera file.
             query: Natural-language or keyword query.
             mode: "hybrid" (default, recommended), "semantic", or "keyword".
             top_k: Number of results to return.
@@ -77,8 +77,8 @@ def build_server():
             doc.close()
 
     @server.tool()
-    def sdx_inspect(file: str) -> dict[str, Any]:
-        """Get metadata for an SDX file: source document, page/chunk counts,
+    def vera_inspect(file: str) -> dict[str, Any]:
+        """Get metadata for a VERA file: source document, page/chunk counts,
         embedding model, parser, and creation info."""
         doc = _open(file)
         try:
@@ -87,8 +87,8 @@ def build_server():
             doc.close()
 
     @server.tool()
-    def sdx_validate(file: str) -> dict[str, Any]:
-        """Validate an SDX file: schema, row counts, index consistency, and
+    def vera_validate(file: str) -> dict[str, Any]:
+        """Validate a VERA file: schema, row counts, index consistency, and
         original-document presence. Returns ok=true/false plus issues."""
         doc = _open(file)
         try:
@@ -97,14 +97,14 @@ def build_server():
             doc.close()
 
     @server.tool()
-    def sdx_figures(
+    def vera_figures(
         file: str,
         page_start: int | None = None,
         page_end: int | None = None,
     ) -> list[dict[str, Any]]:
-        """List figures (extracted images) in an SDX file with captions and page
+        """List figures (extracted images) in a VERA file with captions and page
         locations. Optionally filter to a page range. Image bytes are not
-        returned; use the asset_id with the SDX Python API to fetch them."""
+        returned; use the asset_id with the VERA Python API to fetch them."""
         doc = _open(file)
         try:
             return doc.figures(page_start=page_start, page_end=page_end)
@@ -112,7 +112,7 @@ def build_server():
             doc.close()
 
     @server.tool()
-    def sdx_get_page(file: str, page_number: int) -> dict[str, Any]:
+    def vera_get_page(file: str, page_number: int) -> dict[str, Any]:
         """Get the full text of a single page, for reading the context around a
         search hit. Pages are 1-based."""
         doc = _open(file)
@@ -131,6 +131,6 @@ def build_server():
 
 
 def main() -> int:
-    """Entry point for `sdx mcp`: run the server over stdio."""
+    """Entry point for `vera mcp`: run the server over stdio."""
     build_server().run()
     return 0

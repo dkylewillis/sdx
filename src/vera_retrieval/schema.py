@@ -22,7 +22,7 @@ def create_schema(conn: sqlite3.Connection) -> None:
     conn.executescript(
         """
         PRAGMA foreign_keys = ON;
-        CREATE TABLE IF NOT EXISTS sdx_metadata (
+        CREATE TABLE IF NOT EXISTS vera_metadata (
             key TEXT PRIMARY KEY,
             value TEXT NOT NULL
         );

@@ -1,14 +1,14 @@
-# SDX Project Brief
+# VERA Project Brief
 
 ## Project Name
 
-**SDX — Semantic Document eXchange**
+**VERA — Vector-Embedded Retrieval Archive**
 
 ## Purpose
 
 Create a portable file format and supporting libraries that allow documents to be semantically searched without requiring each application to re-parse, re-chunk, re-embed, and store the document in a separate vector database.
 
-The intended concept is similar to a PDF, but instead of only preserving visual/document content, an SDX file preserves the original document plus a semantic search layer.
+The intended concept is similar to a PDF, but instead of only preserving visual/document content, a VERA file preserves the original document plus a semantic search layer.
 
 ## Core Idea
 
@@ -28,31 +28,31 @@ Store in vector database
 Search
 ```
 
-Proposed SDX workflow:
+Proposed VERA workflow:
 
 ```text
 Source Document
     ↓
 Convert once
     ↓
-.sdx file
+.vera file
     ↓
 Search anywhere
 ```
 
-The expensive ingestion process happens once during conversion. After that, any compatible application can open the `.sdx` file and perform semantic, keyword, or hybrid search locally.
+The expensive ingestion process happens once during conversion. After that, any compatible application can open the `.vera` file and perform semantic, keyword, or hybrid search locally.
 
 ## High-Level Definition
 
-An `.sdx` file is a **portable semantic document exchange file**.
+An `.vera` file is a **portable vector-embedded retrieval archive**.
 
-For version 0.1, define `.sdx` as:
+For version 0.1, define `.vera` as:
 
 ```text
-SDX = SQLite database + required schema + stored document intelligence
+VERA = SQLite database + required schema + stored document intelligence
 ```
 
-The `.sdx` file should be a normal SQLite database with a custom file extension and a standardized schema.
+The `.vera` file should be a normal SQLite database with a custom file extension and a standardized schema.
 
 ## Primary Goals
 
@@ -113,20 +113,20 @@ What are the landscape buffer requirements?
 The first working version should support:
 
 ```bash
-sdx convert input.pdf output.sdx
-sdx inspect output.sdx
-sdx search output.sdx "minimum parking required for restaurant"
+vera convert input.pdf output.vera
+vera inspect output.vera
+vera search output.vera "minimum parking required for restaurant"
 ```
 
 Python API:
 
 ```python
-from sdx import convert
-from sdx import SDXDocument
+from vera_retrieval import convert
+from vera_retrieval import VeraDocument
 
-convert("ordinance.pdf", "ordinance.sdx")
+convert("ordinance.pdf", "ordinance.vera")
 
-doc = SDXDocument.open("ordinance.sdx")
+doc = VeraDocument.open("ordinance.vera")
 results = doc.search("minimum parking required for restaurant")
 ```
 
@@ -186,11 +186,11 @@ Later options:
 ## Proposed Repository Structure
 
 ```text
-sdx/
+vera/
 ├── README.md
 ├── pyproject.toml
 ├── src/
-│   └── sdx/
+│   └── vera/
 │       ├── __init__.py
 │       ├── cli.py
 │       ├── convert.py
@@ -207,22 +207,22 @@ sdx/
 │   ├── test_search.py
 │   └── test_schema.py
 └── docs/
-    ├── sdx-spec-v0.1.md
+    ├── vera-spec-v0.1.md
     └── examples.md
 ```
 
-## SDX Schema v0.1
+## VERA Schema v0.1
 
-The following tables should be created in every `.sdx` file.
+The following tables should be created in every `.vera` file.
 
-### `sdx_metadata`
+### `vera_metadata`
 
-Stores SDX file-level metadata.
+Stores VERA file-level metadata.
 
 Suggested fields:
 
 ```sql
-CREATE TABLE sdx_metadata (
+CREATE TABLE vera_metadata (
     key TEXT PRIMARY KEY,
     value TEXT NOT NULL
 );
@@ -493,7 +493,7 @@ Chunks should not lose citation information.
 
 ### 1. Convert Once, Search Anywhere
 
-The SDX file should contain enough information to avoid repeating the ingestion pipeline.
+The VERA file should contain enough information to avoid repeating the ingestion pipeline.
 
 ### 2. Preserve Source Truth
 
@@ -515,10 +515,10 @@ A simple version that can convert PDFs and search them locally is more valuable 
 
 Implement a command-line interface.
 
-### `sdx convert`
+### `vera convert`
 
 ```bash
-sdx convert input.pdf output.sdx
+vera convert input.pdf output.vera
 ```
 
 Options:
@@ -531,17 +531,17 @@ Options:
 --store-original true
 ```
 
-### `sdx inspect`
+### `vera inspect`
 
 ```bash
-sdx inspect output.sdx
+vera inspect output.vera
 ```
 
 Should print:
 
 ```text
-File: output.sdx
-Format: SDX v0.1
+File: output.vera
+Format: VERA v0.1
 Source: input.pdf
 Pages: 128
 Chunks: 642
@@ -551,10 +551,10 @@ Parser: pymupdf
 Created: 2026-06-09T...
 ```
 
-### `sdx search`
+### `vera search`
 
 ```bash
-sdx search output.sdx "stream buffer requirements"
+vera search output.vera "stream buffer requirements"
 ```
 
 Options:
@@ -566,12 +566,12 @@ Options:
 --top-k 10
 ```
 
-### `sdx export`
+### `vera export`
 
 Optional for v0.1, but useful:
 
 ```bash
-sdx export output.sdx --format json
+vera export output.vera --format json
 ```
 
 Could export chunks and metadata.
@@ -581,12 +581,12 @@ Could export chunks and metadata.
 Minimum API:
 
 ```python
-from sdx import convert
-from sdx import SDXDocument
+from vera_retrieval import convert
+from vera_retrieval import VeraDocument
 
-convert("input.pdf", "output.sdx")
+convert("input.pdf", "output.vera")
 
-doc = SDXDocument.open("output.sdx")
+doc = VeraDocument.open("output.vera")
 results = doc.search("stream buffer requirements", mode="hybrid", top_k=10)
 
 for result in results:
@@ -598,9 +598,9 @@ for result in results:
 Suggested classes:
 
 ```python
-class SDXDocument:
+class VeraDocument:
     @classmethod
-    def open(cls, path: str) -> "SDXDocument":
+    def open(cls, path: str) -> "VeraDocument":
         ...
 
     def search(self, query: str, mode: str = "hybrid", top_k: int = 10):
@@ -617,8 +617,8 @@ class SDXDocument:
 
 The MVP is complete when:
 
-1. A PDF can be converted to `.sdx`.
-2. The `.sdx` file is valid SQLite.
+1. A PDF can be converted to `.vera`.
+2. The `.vera` file is valid SQLite.
 3. The original PDF is stored in the `assets` table.
 4. Parsed page text is stored.
 5. Chunks are created and stored.
@@ -629,7 +629,7 @@ The MVP is complete when:
 10. Hybrid search returns relevant chunks.
 11. Search results include source filename, page number, heading path when available, score, and text.
 12. CLI commands `convert`, `inspect`, and `search` work.
-13. Python API can open and search an SDX file.
+13. Python API can open and search a VERA file.
 14. Basic tests exist.
 
 ## Testing Plan
@@ -651,17 +651,17 @@ Use a small sample PDF in tests.
 
 ## Possible Future Features
 
-### SDX v0.2
+### VERA v0.2
 
 - sqlite-vec support
 - better table extraction
 - page thumbnails
 - richer citations with bounding boxes
-- multiple documents per SDX
+- multiple documents per VERA
 - JSON export/import
 - Qdrant import/export
 
-### SDX v0.3
+### VERA v0.3
 
 - multiple embedding models
 - incremental update system
@@ -671,7 +671,7 @@ Use a small sample PDF in tests.
 - entity extraction
 - section-level summaries
 
-### SDX v1.0
+### VERA v1.0
 
 - formal specification
 - validation tool
@@ -690,7 +690,7 @@ Build the project in small pieces.
 Recommended order:
 
 1. Create SQLite schema.
-2. Build `sdx init` or schema creation function.
+2. Build `vera init` or schema creation function.
 3. Build simple PDF parser.
 4. Store source document and parsed pages.
 5. Create simple chunks.
@@ -710,19 +710,19 @@ Avoid overengineering the first version.
 File extension:
 
 ```text
-.sdx
+.vera
 ```
 
 Name:
 
 ```text
-Semantic Document eXchange
+Vector-Embedded Retrieval Archive
 ```
 
 Short description:
 
 ```text
-SDX is a portable semantic document exchange format that stores a document, its parsed structure, embeddings, indexes, and citation metadata in one searchable file.
+VERA is a portable vector-embedded retrieval archive that stores a document, its parsed structure, embeddings, indexes, and citation metadata in one searchable file.
 ```
 
 Tagline:
@@ -733,6 +733,6 @@ Convert once. Search anywhere.
 
 ## Final Instruction to Agent
 
-Create a working Python MVP for the SDX format.
+Create a working Python MVP for the VERA format.
 
-Focus on making a single PDF convertible to a searchable `.sdx` SQLite file. Prioritize a working end-to-end pipeline over advanced features. The first milestone is a CLI and Python API that can convert a PDF, inspect the resulting SDX file, and perform semantic, keyword, and hybrid search with page-aware citations.
+Focus on making a single PDF convertible to a searchable `.vera` SQLite file. Prioritize a working end-to-end pipeline over advanced features. The first milestone is a CLI and Python API that can convert a PDF, inspect the resulting VERA file, and perform semantic, keyword, and hybrid search with page-aware citations.

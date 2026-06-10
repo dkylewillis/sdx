@@ -5,51 +5,51 @@ from pathlib import Path
 
 import streamlit as st
 
-from sdx import SDXDocument, convert
+from vera_retrieval import VeraDocument, convert
 
 
-st.set_page_config(page_title="SDX Workbench", layout="wide")
-st.title("SDX Workbench")
+st.set_page_config(page_title="VERA Workbench", layout="wide")
+st.title("VERA Workbench")
 st.caption("Convert once. Search anywhere.")
 
-if "sdx_path" not in st.session_state:
-    st.session_state.sdx_path = ""
+if "vera_path" not in st.session_state:
+    st.session_state.vera_path = ""
 
 with st.sidebar:
-    st.header("1. Open or create SDX")
-    uploaded_pdf = st.file_uploader("Convert PDF to SDX", type=["pdf"])
-    output_name = st.text_input("Output file name", value="document.sdx")
+    st.header("1. Open or create VERA")
+    uploaded_pdf = st.file_uploader("Convert PDF to VERA", type=["pdf"])
+    output_name = st.text_input("Output file name", value="document.vera")
     model = st.text_input("Embedding model", value="hashing")
     chunk_size = st.number_input("Chunk size", min_value=50, max_value=2000, value=500, step=50)
     overlap = st.number_input("Overlap", min_value=0, max_value=500, value=75, step=25)
 
     if uploaded_pdf and st.button("Convert uploaded PDF", type="primary"):
-        temp_dir = Path(tempfile.mkdtemp(prefix="sdx-workbench-"))
+        temp_dir = Path(tempfile.mkdtemp(prefix="vera-workbench-"))
         pdf_path = temp_dir / uploaded_pdf.name
-        sdx_path = temp_dir / output_name
+        vera_path = temp_dir / output_name
         pdf_path.write_bytes(uploaded_pdf.getvalue())
-        with st.spinner("Converting PDF to SDX..."):
-            convert(str(pdf_path), str(sdx_path), model=model, chunk_size=int(chunk_size), overlap=int(overlap))
-        st.session_state.sdx_path = str(sdx_path)
-        st.success(f"Created {sdx_path}")
+        with st.spinner("Converting PDF to VERA..."):
+            convert(str(pdf_path), str(vera_path), model=model, chunk_size=int(chunk_size), overlap=int(overlap))
+        st.session_state.vera_path = str(vera_path)
+        st.success(f"Created {vera_path}")
 
     st.divider()
-    st.session_state.sdx_path = st.text_input("Existing .sdx path", value=st.session_state.sdx_path)
+    st.session_state.vera_path = st.text_input("Existing .vera path", value=st.session_state.vera_path)
 
-sdx_path = st.session_state.sdx_path.strip()
-if not sdx_path:
-    st.info("Upload a PDF or enter a path to an existing `.sdx` file to begin.")
+vera_path = st.session_state.vera_path.strip()
+if not vera_path:
+    st.info("Upload a PDF or enter a path to an existing `.vera` file to begin.")
     st.stop()
 
-path = Path(sdx_path)
+path = Path(vera_path)
 if not path.exists():
     st.error(f"File does not exist: {path}")
     st.stop()
 
 try:
-    doc = SDXDocument.open(str(path))
+    doc = VeraDocument.open(str(path))
 except Exception as exc:
-    st.error(f"Could not open SDX file: {exc}")
+    st.error(f"Could not open VERA file: {exc}")
     st.stop()
 
 try:
@@ -65,7 +65,7 @@ try:
         st.metric("Pages", info.get("pages"))
         st.metric("Chunks", info.get("chunks"))
         st.metric("Embeddings", info.get("embeddings"))
-        st.write("**Format:**", f"{info.get('format_name', 'SDX')} v{info.get('format_version')}")
+        st.write("**Format:**", f"{info.get('format_name', 'VERA')} v{info.get('format_version')}")
         st.write("**Source:**", info.get("source_file_name") or info.get("source"))
         st.write("**Model:**", info.get("default_embedding_model"))
         st.write("**Parser:**", info.get("parser_name"))
